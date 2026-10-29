@@ -266,6 +266,37 @@
         .progress .open-req { color: var(--red); }
         .shared-banner { padding: 12px 0; border-bottom: 1px solid var(--hair); font-size: 13px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 
+        /* ── Motion ─────────────────────────────────────── */
+        :root { --ease: cubic-bezier(0.2, 0.7, 0.2, 1); }
+        @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+        @keyframes grow { from { opacity: 0; transform: scaleY(0.2); } to { opacity: 1; transform: none; } }
+
+        .hero h1 { animation: rise 0.7s var(--ease) both; }
+        .hero p  { animation: rise 0.7s 0.12s var(--ease) both; }
+        .stat    { animation: rise 0.6s calc(0.2s + var(--i, 0) * 0.07s) var(--ease) both; }
+
+        /* Sections fade up as they scroll into view; the red bar under the heading draws in */
+        .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); }
+        .reveal.in { opacity: 1; transform: none; }
+        .section-head::after { width: 0; transition: width 0.6s 0.2s var(--ease); }
+        .in .section-head::after { width: 48px; }
+
+        /* Lists cascade in; JS sets --i on each item */
+        .stagger > * { animation: rise 0.4s calc(min(var(--i, 0), 12) * 0.035s) var(--ease) both; }
+        .block { transform-origin: top; animation: grow 0.45s calc(var(--i, 0) * 0.025s) var(--ease) both; }
+
+        .go span:last-child { transition: transform 0.2s var(--ease); }
+        .go:hover span:last-child { transform: translateX(5px); }
+        .go { transition: background 0.2s; }
+        .toggles span, .link, .plan .letter { transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.2s var(--ease); }
+        .plan:hover .letter { transform: translateY(-2px); }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
+            .reveal { opacity: 1; transform: none; }
+            .section-head::after { width: 48px; }
+        }
+
         .spin::after { content: "…"; display: inline-block; animation: dots 1s steps(4) infinite; width: 1.2em; overflow: hidden; vertical-align: bottom; }
         @keyframes dots { from { width: 0; } to { width: 1.2em; } }
 
@@ -306,17 +337,17 @@
         <p>Say what you still need and what you're into. You get classes that count, fit your week, and have been graded kindly.</p>
     </div>
     <div class="stats-band"><div class="wrap stats" aria-live="polite">
-        <div class="stat"><b id="stat-classes">—</b><span>classes offered <span id="stat-term" style="display:inline;margin:0"></span></span></div>
-        <div class="stat"><b id="stat-subjects">—</b><span>subjects</span></div>
-        <div class="stat"><b id="stat-breadth">—</b><span>count toward a breadth</span></div>
-        <div class="stat"><b id="stat-days">—</b><span class="live" id="stat-days-label">seats live from Course Search &amp; Enroll</span></div>
+        <div class="stat" style="--i:0"><b id="stat-classes">—</b><span>classes offered <span id="stat-term" style="display:inline;margin:0"></span></span></div>
+        <div class="stat" style="--i:1"><b id="stat-subjects">—</b><span>subjects</span></div>
+        <div class="stat" style="--i:2"><b id="stat-breadth">—</b><span>count toward a breadth</span></div>
+        <div class="stat" style="--i:3"><b id="stat-days">—</b><span class="live" id="stat-days-label">seats live from Course Search &amp; Enroll</span></div>
     </div></div>
 </section>
 
 <div class="wrap">
     <div class="layout">
         <div class="left">
-            <section class="section">
+            <section class="section reveal">
                 <div class="section-head"><span class="num">01</span><h2>What you need</h2></div>
                 <div class="dars" id="dars">
                     <label class="dars-upload">
@@ -381,7 +412,7 @@
                 </div>
             </section>
 
-            <section class="section">
+            <section class="section reveal">
                 <div class="section-head"><span class="num">02</span><h2>Must-haves</h2><span class="aside" id="credit-total"></span></div>
                 <div id="mine"></div>
                 <input type="text" id="search" placeholder="Already know one? cs400, math 222…" autocomplete="off" aria-label="Search courses">
@@ -391,7 +422,7 @@
                 <div id="results"></div>
             </section>
 
-            <section class="section">
+            <section class="section reveal">
                 <div class="section-head"><span class="num">03</span><h2>Preferences</h2></div>
                 <div class="pref">
                     <label for="pref-start">Earliest class</label>
@@ -437,7 +468,7 @@
         </div>
 
         <div class="right">
-            <section class="section">
+            <section class="section reveal">
                 <div class="section-head"><span class="num">04</span><h2>Schedule</h2><span class="aside" id="checked"></span></div>
                 <div id="output">
                     <div class="empty">
@@ -449,7 +480,7 @@
         </div>
     </div>
 
-    <section class="section roadmap-section" id="roadmap-section">
+    <section class="section roadmap-section reveal" id="roadmap-section">
         <div class="section-head"><span class="num">05</span><h2>Roadmap</h2><span class="aside" id="roadmap-total"></span></div>
         <p class="status">Sketch the semesters ahead. Add courses to any term, or send a finished schedule here with “Add to roadmap”.</p>
         <div class="roadmap" id="roadmap"></div>
@@ -532,6 +563,36 @@ function load() {
     catch (e) { return {}; }
 }
 
+// ── Motion ──────────────────────────────────────────────────
+
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Marks a container's children so they cascade in (see .stagger in the CSS)
+function stagger(container) {
+    if (!container) return;
+    container.classList.remove("stagger");
+    [...container.children].forEach((el, i) => el.style.setProperty("--i", i));
+    void container.offsetWidth;   // restart the animation on re-render
+    container.classList.add("stagger");
+}
+
+// Counts a number up from zero, e.g. 0 → 5,863
+function countUp(el, value) {
+    if (reduceMotion || typeof value !== "number") { el.textContent = value.toLocaleString(); return; }
+    const start = performance.now(), duration = 900;
+    const step = (now) => {
+        const t = Math.min(1, (now - start) / duration);
+        el.textContent = Math.round(value * (1 - Math.pow(1 - t, 3))).toLocaleString();
+        if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+}
+
+const revealer = "IntersectionObserver" in window ? new IntersectionObserver(entries => {
+    for (const e of entries) if (e.isIntersecting) { e.target.classList.add("in"); revealer.unobserve(e.target); }
+}, { threshold: 0.08 }) : null;
+document.querySelectorAll(".reveal").forEach(el => revealer ? revealer.observe(el) : el.classList.add("in"));
+
 // ── Terms ───────────────────────────────────────────────────
 
 async function initTerms(saved) {
@@ -552,7 +613,7 @@ async function loadStats() {
     const start = new Date(term.start + "T00:00:00"), end = new Date(term.end + "T00:00:00");
     if (today < start) {
         const days = Math.round((start - today) / day);
-        $("#stat-days").textContent = days.toLocaleString();
+        countUp($("#stat-days"), days);
         $("#stat-days-label").textContent = `day${days === 1 ? "" : "s"} until classes start`;
     } else if (today <= end) {
         $("#stat-days").textContent = `Week ${Math.floor((today - start) / day / 7) + 1}`;
@@ -564,9 +625,9 @@ async function loadStats() {
 
     try {
         const s = await fetch(`/api/stats?term=${state.term}`).then(r => r.json());
-        $("#stat-classes").textContent = s.classes.toLocaleString();
-        $("#stat-subjects").textContent = s.subjects.toLocaleString();
-        $("#stat-breadth").textContent = s.breadth.toLocaleString();
+        countUp($("#stat-classes"), s.classes);
+        countUp($("#stat-subjects"), s.subjects);
+        countUp($("#stat-breadth"), s.breadth);
     } catch (e) { /* leave the dashes */ }
 }
 
@@ -747,6 +808,7 @@ function renderDars(error) {
                 ${r.kind === "list" ? `<span class="small faint">${esc(r.courses.slice(0, 6).join(", "))}${r.courses.length > 6 ? ` +${r.courses.length - 6} more` : ""}</span>` : ""}
             </label>`;
     }).join("");
+    stagger($("#dars-reqs"));
     $("#dars-reqs").querySelectorAll("[data-dars-i]").forEach(cb => cb.addEventListener("change", () => {
         d.requirements[+cb.dataset.darsI].on = cb.checked;
         save();
@@ -784,6 +846,7 @@ async function runSearch() {
     }
     box.innerHTML = `<p class="status">${res.found.toLocaleString()} result${res.found === 1 ? "" : "s"}${res.found > 20 ? ", top 20 shown" : ""}</p>` +
         res.courses.map(courseRow).join("");
+    stagger(box);
     box.querySelectorAll("[data-add]").forEach(btn => btn.addEventListener("click", () => {
         addCourse(res.courses[+btn.dataset.add]);
         btn.textContent = "Added";
@@ -1079,6 +1142,9 @@ function renderOutput() {
     }));
     $("#copy-numbers").addEventListener("click", copyNumbers);
     $("#download-ics").addEventListener("click", downloadIcs);
+    stagger(out.querySelector(".why"));
+    out.querySelectorAll(".alt-group").forEach(stagger);
+    stagger(out.querySelector("tbody"));
     if (!res.shared) {
         $("#to-roadmap").addEventListener("click", planToRoadmap);
         $("#share").addEventListener("click", copyShareLink);
@@ -1169,14 +1235,16 @@ function calendar(plan) {
         lines += `<div class="cal-line" style="top:${y}px"></div>`;
     }
 
+    let blockIndex = 0;
     const cols = DAYS.map(day => {
         const blocks = items.filter(s => s.days.includes(day)).map(s => {
+            const i = blockIndex++;
             const h = (toMin(s.end) - toMin(s.start)) * pxPerMin;
             if (s.type === "busy") {
-                return `<div class="block busy" style="top:${top(s.start)}px;height:${h}px"><b>Busy</b>${fmtTime(s.start)}–${fmtTime(s.end)}</div>`;
+                return `<div class="block busy" style="--i:${i};top:${top(s.start)}px;height:${h}px"><b>Busy</b>${fmtTime(s.start)}–${fmtTime(s.end)}</div>`;
             }
             const kind = s.type === "lecture" ? "" : "secondary";
-            return `<div class="block ${kind}" style="--c:${colorFor(s.name)};top:${top(s.start)}px;height:${h}px"
+            return `<div class="block ${kind}" style="--i:${i};--c:${colorFor(s.name)};top:${top(s.start)}px;height:${h}px"
                          title="${esc(s.name)} ${abbr(s.type)} ${esc(s.section)}, ${fmtTime(s.start)}–${fmtTime(s.end)}${s.building ? ", " + esc(s.building) : ""}">
                         <b>${esc(s.name)}</b>${abbr(s.type)} ${esc(s.section)} · ${fmtTime(s.start)}${s.building ? `<br><span class="faint">${esc(s.building)}</span>` : ""}
                     </div>`;
@@ -1293,6 +1361,7 @@ function renderRoadmap() {
             </div>`;
     }).join("");
     $("#roadmap-total").textContent = total ? `${total} credits planned` : "";
+    stagger($("#progress"));
 
     $("#roadmap").querySelectorAll("[data-rm-term]").forEach(btn => btn.addEventListener("click", () => {
         state.roadmap[btn.dataset.rmTerm].splice(+btn.dataset.rmI, 1);
