@@ -4,304 +4,303 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MadPlan</title>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23c5050c'/></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --bg: #080b12;
-            --surface: #0e1220;
-            --card: #111827;
-            --border: #1e2a40;
-            --accent: #38bdf8;
-            --accent2: #818cf8;
-            --text: #e2e8f0;
-            --muted: #64748b;
-            --soft: #94a3b8;
-            --danger: #f87171;
-            --warn: #fbbf24;
-            --success: #34d399;
+            --paper: #f3f0e8;
+            --paper-2: #ebe7dc;
+            --ink: #161513;
+            --ink-2: #57534b;
+            --ink-3: #8c877c;
+            --rule: #161513;
+            --hair: #d6d1c4;
+            --red: #c5050c;
+            --amber: #9a6a00;
+            --green: #2f6b3a;
+            --gutter: 32px;
         }
 
         body {
-            font-family: 'DM Mono', monospace;
-            font-size: 13px;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(var(--border) 1px, transparent 1px),
-                linear-gradient(90deg, var(--border) 1px, transparent 1px);
-            background-size: 48px 48px;
-            opacity: 0.2;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            padding: 20px 24px;
-            border-bottom: 1px solid var(--border);
-            background: rgba(8, 11, 18, 0.85);
-        }
-
-        h1 {
-            font-family: 'Syne', sans-serif;
-            font-size: 22px;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-        }
-        h1 span { color: var(--accent); }
-
-        h2 {
-            font-family: 'Syne', sans-serif;
-            font-size: 15px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-        }
-        h2 small { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--soft); font-weight: 400; }
-
-        main {
-            display: grid;
-            grid-template-columns: minmax(320px, 420px) 1fr;
-            gap: 20px;
-            padding: 20px 24px 48px;
-            max-width: 1500px;
-            margin: 0 auto;
-        }
-        @media (max-width: 900px) {
-            main { grid-template-columns: 1fr; padding: 16px; }
-            header { padding: 14px 16px; }
-        }
-
-        .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-        }
-
-        input[type=text], select {
-            width: 100%;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            color: var(--text);
-            border-radius: 8px;
-            padding: 10px 12px;
-            font: inherit;
-        }
-        input[type=text]:focus, select:focus { outline: none; border-color: var(--accent); }
-        header select { width: auto; }
-
-        button {
-            font: inherit;
-            cursor: pointer;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: var(--surface);
-            color: var(--text);
-            padding: 7px 12px;
-        }
-        button:hover { border-color: var(--accent); }
-        button.primary {
-            background: var(--accent);
-            color: #04121c;
-            border: none;
-            font-weight: 500;
-            padding: 12px;
-            width: 100%;
+            font-family: 'Instrument Sans', system-ui, sans-serif;
             font-size: 14px;
+            line-height: 1.45;
+            background: var(--paper);
+            color: var(--ink);
+            font-variant-numeric: tabular-nums;
+            -webkit-font-smoothing: antialiased;
         }
-        button.primary:disabled { opacity: 0.5; cursor: wait; }
-        button.small { padding: 4px 9px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
-        button.danger:hover { border-color: var(--danger); color: var(--danger); }
 
-        .muted { color: var(--soft); }
-        .tiny { font-size: 11px; }
-        .hint { color: var(--muted); font-size: 12px; padding: 8px 0; }
+        .serif { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; }
+        .muted { color: var(--ink-2); }
+        .faint { color: var(--ink-3); }
+        .small { font-size: 12px; }
 
-        /* Search results */
-        #results { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow-y: auto; }
-        .result {
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 12px;
-            background: var(--surface);
-        }
-        .result-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
-        .result-name { font-weight: 500; }
-        .result-title { color: var(--soft); }
-        .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
-        .tag {
-            font-size: 11px;
-            padding: 2px 7px;
-            border-radius: 99px;
-            border: 1px solid var(--border);
-            color: var(--soft);
-        }
-        .gpa { font-weight: 500; border-color: currentColor; }
-        .gpa.easy { color: var(--success); }
-        .gpa.mid  { color: var(--warn); }
-        .gpa.hard { color: var(--danger); }
-        details { margin-top: 8px; color: var(--soft); font-size: 12px; line-height: 1.5; }
-        summary { cursor: pointer; color: var(--muted); }
-        details p { margin-top: 6px; }
+        .wrap { max-width: 1440px; margin: 0 auto; padding: 0 var(--gutter); }
 
-        /* My courses */
-        .mine { display: flex; flex-direction: column; gap: 6px; }
-        .mine-row {
-            display: flex; align-items: center; gap: 10px;
-            padding: 8px 10px; border-radius: 8px; background: var(--surface);
+        /* ── Masthead ─────────────────────────────────── */
+        .top {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 18px 0; border-bottom: 1px solid var(--rule);
         }
-        .swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-        .mine-row .grow { flex: 1; min-width: 0; }
-        .mine-row .grow div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .wordmark { font-weight: 600; letter-spacing: -0.01em; }
+        .wordmark i { color: var(--red); font-style: normal; }
 
-        /* Preferences */
-        .prefs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .prefs label.field { display: flex; flex-direction: column; gap: 5px; color: var(--soft); font-size: 12px; }
-        .full { grid-column: 1 / -1; }
-        .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-        .chip input { display: none; }
-        .chip span {
-            display: inline-block; padding: 6px 11px; border-radius: 99px;
-            border: 1px solid var(--border); cursor: pointer; color: var(--soft);
+        .hero {
+            display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--gutter);
+            padding: 56px 0 40px; border-bottom: 1px solid var(--rule); align-items: end;
         }
-        .chip input:checked + span { border-color: var(--accent); color: var(--accent); background: rgba(56,189,248,0.08); }
-        .check { display: flex; align-items: center; gap: 8px; color: var(--soft); cursor: pointer; }
-        .busy-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
-        .busy-row select { width: auto; padding: 6px 8px; }
+        .hero h1 {
+            grid-column: span 8;
+            font-family: 'Instrument Serif', Georgia, serif; font-weight: 400;
+            font-size: clamp(56px, 9vw, 136px); line-height: 0.9; letter-spacing: -0.03em;
+        }
+        .hero h1 em { color: var(--red); }
+        .hero p { grid-column: span 4; color: var(--ink-2); max-width: 36ch; }
 
-        /* Plans */
-        .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-        .tab {
-            flex: 1; min-width: 140px; text-align: left; padding: 10px 12px;
+        /* ── Layout ───────────────────────────────────── */
+        .layout {
+            display: grid; grid-template-columns: repeat(12, 1fr); gap: 0 var(--gutter);
+            padding-bottom: 96px;
         }
-        .tab.active { border-color: var(--accent); background: rgba(56,189,248,0.08); }
-        .tab .score { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
-        .notes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
-        .alert {
-            padding: 10px 12px; border-radius: 8px; margin-bottom: 12px;
-            border: 1px solid rgba(251,191,36,0.4); color: var(--warn); background: rgba(251,191,36,0.06);
-        }
-        .alert.bad { border-color: rgba(248,113,113,0.4); color: var(--danger); background: rgba(248,113,113,0.06); }
+        .left  { grid-column: span 4; min-width: 0; }
+        .right { grid-column: span 8; min-width: 0; }
 
-        /* Calendar */
-        .calendar { display: grid; grid-template-columns: 44px repeat(5, 1fr); position: relative; overflow-x: auto; }
-        .cal-head { text-align: center; color: var(--soft); padding-bottom: 6px; font-size: 12px; }
+        .section { padding-top: 20px; margin-bottom: 48px; }
+        .section-head {
+            display: flex; align-items: baseline; gap: 14px;
+            padding-bottom: 12px; border-bottom: 1px solid var(--rule); margin-bottom: 4px;
+        }
+        .section-head .num { font-size: 12px; color: var(--ink-3); }
+        .section-head h2 { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 30px; line-height: 1; flex: 1; }
+        .section-head .aside { font-size: 12px; color: var(--ink-2); }
+
+        /* ── Controls ─────────────────────────────────── */
+        input[type=text], select {
+            font: inherit; color: var(--ink); background: transparent;
+            border: 0; border-bottom: 1px solid var(--hair); border-radius: 0;
+            padding: 10px 0; width: 100%;
+        }
+        input[type=text]:focus, select:focus { outline: none; border-bottom-color: var(--ink); }
+        #search { font-size: 20px; padding: 14px 0; }
+        #search::placeholder { color: var(--ink-3); }
+        select { appearance: none; cursor: pointer; padding-right: 18px;
+            background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6' fill='%23161513'/></svg>") no-repeat right center; }
+        .top select { width: auto; border: 0; padding: 4px 18px 4px 0; font-weight: 500; }
+
+        button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+        .link { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+        .link:hover { color: var(--red); }
+        .link:disabled { text-decoration: none; color: var(--ink-3); cursor: default; }
+
+        .go {
+            display: flex; justify-content: space-between; align-items: center; width: 100%;
+            background: var(--ink); color: var(--paper); padding: 18px 20px; font-size: 16px; font-weight: 500;
+        }
+        .go:hover { background: var(--red); }
+        .go:disabled { opacity: 0.6; cursor: wait; }
+        .go span:last-child { font-family: 'Instrument Serif', Georgia, serif; font-size: 24px; line-height: 1; }
+
+        /* ── Search results / lists ───────────────────── */
+        #results { max-height: 62vh; overflow-y: auto; }
+        .row { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding: 14px 0; border-bottom: 1px solid var(--hair); }
+        .row:last-child { border-bottom: 0; }
+        .code { font-weight: 600; }
+        .meta { grid-column: 1 / -1; font-size: 12px; color: var(--ink-2); }
+        .gpa { text-align: right; white-space: nowrap; }
+        .gpa b { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 26px; line-height: 1; display: block; }
+        .gpa .small { color: var(--ink-3); }
+        .gpa.hard b { color: var(--red); }
+        details { grid-column: 1 / -1; font-size: 13px; color: var(--ink-2); }
+        summary { cursor: pointer; font-size: 12px; color: var(--ink-3); list-style: none; }
+        summary::-webkit-details-marker { display: none; }
+        summary::before { content: "+ "; }
+        details[open] summary::before { content: "– "; }
+        details p { margin-top: 8px; max-width: 60ch; }
+        .row-actions { grid-column: 1 / -1; display: flex; gap: 18px; font-size: 13px; }
+        .status { padding: 14px 0; color: var(--ink-3); font-size: 13px; }
+
+        .mine-row { display: grid; grid-template-columns: 10px 1fr auto auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--hair); }
+        .dot { width: 10px; height: 10px; }
+
+        /* ── Preferences ──────────────────────────────── */
+        .pref { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--hair); }
+        .pref > label:first-child, .pref > span:first-child { color: var(--ink-2); font-size: 13px; }
+        .pref:last-child { border-bottom: 0; }
+        .toggles { display: flex; flex-wrap: wrap; }
+        .toggles label { cursor: pointer; }
+        .toggles input { position: absolute; opacity: 0; pointer-events: none; }
+        .toggles span { display: inline-block; padding: 5px 10px; border: 1px solid var(--hair); margin: 0 -1px -1px 0; font-size: 13px; }
+        .toggles input:checked + span { background: var(--ink); color: var(--paper); border-color: var(--ink); position: relative; }
+        .toggles input:focus-visible + span { outline: 2px solid var(--red); outline-offset: 1px; }
+        .check { display: flex; gap: 10px; align-items: center; cursor: pointer; }
+        .check input { accent-color: var(--ink); width: 15px; height: 15px; }
+        .busy-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 0; }
+        .busy-row select { width: auto; padding: 4px 16px 4px 0; }
+
+        /* ── Schedule ─────────────────────────────────── */
+        .empty { padding: 72px 0; }
+        .empty .serif { font-size: 40px; line-height: 1.05; display: block; margin-bottom: 12px; color: var(--ink-3); }
+
+        .plans { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--rule); }
+        .plan {
+            text-align: left; padding: 16px 16px 16px 0; border-right: 1px solid var(--hair);
+            display: grid; grid-template-columns: auto 1fr; gap: 0 14px; align-items: end;
+        }
+        .plan + .plan { padding-left: 16px; }
+        .plan:last-child { border-right: 0; }
+        .plan .letter { font-family: 'Instrument Serif', Georgia, serif; font-size: 64px; line-height: 0.8; color: var(--ink-3); grid-row: span 2; }
+        .plan.active .letter { color: var(--red); }
+        .plan .score { font-size: 13px; }
+        .plan .score b { font-weight: 600; }
+        .plan:hover .letter { color: var(--ink); }
+        .plan.active:hover .letter { color: var(--red); }
+
+        .notes { padding: 14px 0; color: var(--ink-2); font-size: 13px; border-bottom: 1px solid var(--hair); }
+        .notes .warn { color: var(--red); }
+        .note-line { padding: 10px 0; border-bottom: 1px solid var(--hair); font-size: 13px; }
+        .note-line b { font-weight: 600; }
+        .note-line.bad { color: var(--red); }
+
+        .calendar { display: grid; grid-template-columns: 44px repeat(5, minmax(64px, 1fr)); margin-top: 24px; padding-bottom: 10px; overflow-x: auto; }
+        .cal-head { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); padding: 0 0 8px 8px; border-bottom: 1px solid var(--rule); }
         .cal-times { position: relative; }
-        .cal-time { position: absolute; right: 6px; font-size: 10px; color: var(--muted); transform: translateY(-50%); }
-        .cal-day { position: relative; border-left: 1px solid var(--border); min-width: 70px; }
-        .cal-line { position: absolute; left: 0; right: 0; border-top: 1px solid var(--border); opacity: 0.5; }
+        .cal-time { position: absolute; left: 0; font-size: 11px; color: var(--ink-3); transform: translateY(-50%); }
+        .cal-day { position: relative; border-left: 1px solid var(--hair); }
+        .cal-line { position: absolute; left: 0; right: 0; border-top: 1px solid var(--hair); }
         .block {
-            position: absolute; left: 3px; right: 3px; border-radius: 6px;
-            padding: 3px 5px; font-size: 10.5px; line-height: 1.25; overflow: hidden;
-            color: #04121c;
+            position: absolute; left: 2px; right: 2px; overflow: hidden;
+            padding: 4px 6px; font-size: 11px; line-height: 1.25;
+            border-left: 3px solid var(--c);
+            background: color-mix(in srgb, var(--c) 13%, var(--paper));
         }
-        .block b { font-weight: 500; display: block; }
-        .block.discussion, .block.lab, .block.seminar { opacity: 0.8; border: 1px dashed rgba(0,0,0,0.4); }
-        .block.busy { background: repeating-linear-gradient(45deg, #1e2a40, #1e2a40 6px, #111827 6px, #111827 12px); color: var(--soft); }
+        .block b { font-weight: 600; display: block; }
+        .block.secondary { background: color-mix(in srgb, var(--c) 6%, var(--paper)); border-left-style: dotted; }
+        .block.busy { border-left-color: var(--ink-3); background: repeating-linear-gradient(-45deg, var(--paper-2), var(--paper-2) 4px, var(--paper) 4px, var(--paper) 8px); color: var(--ink-2); }
 
-        /* Section table */
-        .table-wrap { overflow-x: auto; margin-top: 16px; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th { text-align: left; color: var(--muted); font-weight: 400; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-        td { padding: 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
-        .status-OPEN { color: var(--success); }
-        .status-WAITLISTED { color: var(--warn); }
-        .status-CLOSED { color: var(--danger); }
-        .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+        .table-wrap { overflow-x: auto; margin-top: 40px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { text-align: left; font-weight: 400; color: var(--ink-3); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 0 12px 8px 0; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+        td { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--hair); vertical-align: top; }
+        td .dot { display: inline-block; margin-right: 8px; }
+        .open { color: var(--green); }
+        .waitlisted { color: var(--amber); }
+        .closed { color: var(--red); }
 
-        .empty { text-align: center; padding: 48px 16px; color: var(--soft); line-height: 1.7; }
-        .empty b { font-family: 'Syne', sans-serif; font-size: 18px; color: var(--text); display: block; margin-bottom: 6px; }
-        .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -2px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .exports { display: flex; flex-wrap: wrap; gap: 12px 28px; padding-top: 20px; font-size: 14px; }
+
+        .spin::after { content: "…"; display: inline-block; animation: dots 1s steps(4) infinite; width: 1.2em; overflow: hidden; vertical-align: bottom; }
+        @keyframes dots { from { width: 0; } to { width: 1.2em; } }
+
+        footer { border-top: 1px solid var(--rule); padding: 18px 0 32px; font-size: 12px; color: var(--ink-3); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+        @media (max-width: 960px) {
+            :root { --gutter: 16px; }
+            .hero { padding: 32px 0 24px; gap: 16px; }
+            .hero h1, .hero p { grid-column: 1 / -1; }
+            .left, .right { grid-column: 1 / -1; }
+            .plan .letter { font-size: 44px; }
+            .plan { padding: 12px 8px 12px 0; grid-template-columns: 1fr; }
+            .plan .letter { grid-row: auto; }
+            .plan + .plan { padding-left: 10px; }
+        }
     </style>
 </head>
 <body>
-<header>
-    <h1>UW <span>Schedules</span></h1>
-    <select id="term" aria-label="Term"></select>
-</header>
+<div class="wrap">
+    <div class="top">
+        <div class="wordmark">uw<i>/</i>schedules</div>
+        <select id="term" aria-label="Term"></select>
+    </div>
 
-<main>
-    <div class="col">
-        <section class="card">
-            <h2>Find courses <small>search by name, number or topic</small></h2>
-            <input type="text" id="search" placeholder="e.g. COMP SCI 400, psychology, ECON 101" autocomplete="off">
-            {% if not grades_enabled %}
-            <p class="hint">Grade stats are off — add MADGRADES_TOKEN to .env to turn them on.</p>
-            {% endif %}
-            <div id="results"></div>
-        </section>
+    <div class="hero">
+        <h1 id="hero-title">Plan your<br><em>semester.</em></h1>
+        <p>Find classes, see how they've been graded, and lay out a week that works. Seats are live from Course Search &amp; Enroll.</p>
+    </div>
 
-        <section class="card">
-            <h2>My courses <small id="credit-total"></small></h2>
-            <div class="mine" id="mine"></div>
-        </section>
+    <div class="layout">
+        <div class="left">
+            <section class="section">
+                <div class="section-head"><span class="num">01</span><h2>Find courses</h2></div>
+                <input type="text" id="search" placeholder="COMP SCI 400, psychology…" autocomplete="off" aria-label="Search courses">
+                {% if not grades_enabled %}
+                <p class="status">Grade data is off. Add MADGRADES_TOKEN to .env to see it.</p>
+                {% endif %}
+                <div id="results"></div>
+            </section>
 
-        <section class="card">
-            <h2>Preferences</h2>
-            <div class="prefs">
-                <label class="field">Start no earlier than
+            <section class="section">
+                <div class="section-head"><span class="num">02</span><h2>Your courses</h2><span class="aside" id="credit-total"></span></div>
+                <div id="mine"></div>
+            </section>
+
+            <section class="section">
+                <div class="section-head"><span class="num">03</span><h2>Preferences</h2></div>
+                <div class="pref">
+                    <label for="pref-start">Earliest class</label>
                     <select id="pref-start"></select>
-                </label>
-                <label class="field">End no later than
-                    <select id="pref-end"></select>
-                </label>
-                <div class="field full">
-                    <label class="field">Days I'd like off</label>
-                    <div class="chips" id="pref-days"></div>
                 </div>
-                <div class="field full">
-                    <label class="field">Spacing</label>
-                    <div class="chips" id="pref-spacing">
-                        <label class="chip"><input type="radio" name="spacing" value="compact"><span>Compact</span></label>
-                        <label class="chip"><input type="radio" name="spacing" value="balanced" checked><span>Balanced</span></label>
-                        <label class="chip"><input type="radio" name="spacing" value="spread"><span>Breathing room</span></label>
+                <div class="pref">
+                    <label for="pref-end">Latest class</label>
+                    <select id="pref-end"></select>
+                </div>
+                <div class="pref">
+                    <span>Days off</span>
+                    <div class="toggles" id="pref-days"></div>
+                </div>
+                <div class="pref">
+                    <span>Spacing</span>
+                    <div class="toggles">
+                        <label><input type="radio" name="spacing" value="compact"><span>Tight</span></label>
+                        <label><input type="radio" name="spacing" value="balanced" checked><span>Even</span></label>
+                        <label><input type="radio" name="spacing" value="spread"><span>Breaks</span></label>
                     </div>
                 </div>
-                <label class="check full"><input type="checkbox" id="pref-waitlist" checked> Avoid waitlisted sections</label>
-                <label class="check full"><input type="checkbox" id="pref-closed"> Include full sections</label>
-                <div class="full">
-                    <label class="field">Busy times <span class="tiny muted">(work, practice, ...)</span></label>
-                    <div id="busy"></div>
-                    <button class="small" id="add-busy" style="margin-top:8px">+ Add busy time</button>
+                <div class="pref">
+                    <span>Seats</span>
+                    <div>
+                        <label class="check"><input type="checkbox" id="pref-waitlist" checked> Avoid waitlists</label>
+                        <label class="check" style="margin-top:6px"><input type="checkbox" id="pref-closed"> Show full sections</label>
+                    </div>
                 </div>
-            </div>
-        </section>
+                <div class="pref" style="align-items:start">
+                    <span style="padding-top:4px">Busy</span>
+                    <div>
+                        <div id="busy"></div>
+                        <button class="link small" id="add-busy">Add a busy time</button>
+                    </div>
+                </div>
+            </section>
 
-        <button class="primary" id="generate">Build my schedule</button>
+            <button class="go" id="generate"><span>Make schedules</span><span>→</span></button>
+        </div>
+
+        <div class="right">
+            <section class="section">
+                <div class="section-head"><span class="num">04</span><h2>Schedule</h2><span class="aside" id="checked"></span></div>
+                <div id="output">
+                    <div class="empty">
+                        <span class="serif">Nothing here yet.</span>
+                        <span class="muted">Add a few courses, set your preferences, then make schedules.</span>
+                    </div>
+                </div>
+            </section>
+        </div>
     </div>
 
-    <div class="col">
-        <section class="card" id="output">
-            <div class="empty">
-                <b>No schedule yet</b>
-                Search for courses, add them, set your preferences,<br>then hit “Build my schedule”.
-            </div>
-        </section>
-    </div>
-</main>
+    <footer>
+        <span>A personal project. Not affiliated with UW–Madison.</span>
+        <span>Sections from Course Search &amp; Enroll · Grades from Madgrades</span>
+    </footer>
+</div>
 
 <script>
 const DAYS     = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-const COLORS   = ["#38bdf8", "#a78bfa", "#34d399", "#fbbf24", "#f472b6", "#fb923c", "#2dd4bf", "#c084fc"];
+const COLORS   = ["#c5050c", "#1f4e79", "#2f6b3a", "#a86a00", "#6b3fa0", "#0f766e", "#8a4b2a", "#334155"];
 const ICS_DAYS = { Mon: "MO", Tue: "TU", Wed: "WE", Thu: "TH", Fri: "FR", Sat: "SA", Sun: "SU" };
+const TYPE_ABBR = { lecture: "LEC", discussion: "DIS", lab: "LAB", seminar: "SEM" };
 
 const state = {
     term: null,
@@ -323,20 +322,19 @@ function esc(s) {
 
 function fmtTime(t) {
     let h = Math.floor(t / 100), m = t % 100;
-    const ampm = h < 12 ? "am" : "pm";
+    const ampm = h < 12 ? "a" : "p";
     h = h % 12 || 12;
     return m ? `${h}:${String(m).padStart(2, "0")}${ampm}` : `${h}${ampm}`;
 }
 
 const toMin = (t) => Math.floor(t / 100) * 60 + t % 100;
+const abbr  = (type) => TYPE_ABBR[type] || type.slice(0, 3).toUpperCase();
 
-function gpaClass(gpa) {
-    return gpa >= 3.5 ? "easy" : gpa >= 3.0 ? "mid" : "hard";
-}
-
-function gpaTag(stats, label = "avg GPA") {
-    if (!stats) return "";
-    return `<span class="tag gpa ${gpaClass(stats.gpa)}" title="${stats.graded.toLocaleString()} grades">${stats.gpa.toFixed(2)} ${label} · ${stats.pct_a}% A</span>`;
+function gpaBlock(stats) {
+    if (!stats) return `<div class="gpa"><span class="small faint">no grade data</span></div>`;
+    return `<div class="gpa ${stats.gpa < 3.0 ? "hard" : ""}" title="${stats.graded.toLocaleString()} grades">
+                <b>${stats.gpa.toFixed(2)}</b><span class="small">${stats.pct_a}% A</span>
+            </div>`;
 }
 
 function colorFor(name) {
@@ -359,23 +357,31 @@ function load() {
 
 // ── Terms ───────────────────────────────────────────────────
 
+function setHero() {
+    const term = state.terms.find(t => t.code === state.term);
+    if (!term) return;
+    const [season, year] = term.name.split(" ");
+    $("#hero-title").innerHTML = `${esc(season)}<br><em>${esc(year)}.</em>`;
+}
+
 async function initTerms(saved) {
     const res = await fetch("/api/terms").then(r => r.json());
     state.terms = res.terms;
     state.term = res.terms.some(t => t.code === saved.term) ? saved.term : res.default;
     $("#term").innerHTML = res.terms.map(t =>
         `<option value="${t.code}" ${t.code === state.term ? "selected" : ""}>${esc(t.name)}</option>`).join("");
+    setHero();
 }
 
 $("#term").addEventListener("change", (e) => {
-    state.term = e.target.value;
     // Course ids are per term, so the old list may not apply
     if (state.mine.length && !confirm("Switching terms clears your course list. Continue?")) {
-        e.target.value = state.mine[0].term;
-        state.term = e.target.value;
+        e.target.value = state.term;
         return;
     }
+    state.term = e.target.value;
     state.mine = [];
+    setHero();
     renderMine();
     runSearch();
     save();
@@ -396,22 +402,22 @@ async function runSearch() {
     if (!q) { box.innerHTML = ""; return; }
 
     const seq = ++searchSeq;
-    box.innerHTML = `<p class="hint"><span class="spinner"></span> Searching…</p>`;
+    box.innerHTML = `<p class="status spin">Searching</p>`;
     let res;
     try {
         res = await fetch(`/api/search?term=${state.term}&q=${encodeURIComponent(q)}`).then(r => r.json());
     } catch (e) {
-        if (seq === searchSeq) box.innerHTML = `<p class="hint">Search failed — is the UW API reachable?</p>`;
+        if (seq === searchSeq) box.innerHTML = `<p class="status">Couldn't reach the course catalog. Try again.</p>`;
         return;
     }
     if (seq !== searchSeq) return;   // a newer search already started
 
     if (!res.courses.length) {
-        box.innerHTML = `<p class="hint">No courses found for “${esc(q)}”.</p>`;
+        box.innerHTML = `<p class="status">No courses match “${esc(q)}”.</p>`;
         return;
     }
-    box.innerHTML = `<p class="hint">${res.found.toLocaleString()} result${res.found === 1 ? "" : "s"}${res.found > 20 ? " — showing top 20" : ""}</p>` +
-        res.courses.map(courseCard).join("");
+    box.innerHTML = `<p class="status">${res.found.toLocaleString()} result${res.found === 1 ? "" : "s"}${res.found > 20 ? ", top 20 shown" : ""}</p>` +
+        res.courses.map(courseRow).join("");
     box.querySelectorAll("[data-add]").forEach(btn => btn.addEventListener("click", () => {
         addCourse(res.courses[+btn.dataset.add]);
         btn.textContent = "Added";
@@ -419,32 +425,32 @@ async function runSearch() {
     }));
 }
 
-function courseCard(c, i) {
+function courseRow(c, i) {
     const added = state.mine.some(m => m.name === c.name);
     const g = c.grades && (c.grades.recent || c.grades.overall);
-    const tags = [
-        gpaTag(g),
-        `<span class="tag">${esc(c.credits)} cr</span>`,
-        ...c.breadths.map(b => `<span class="tag">${esc(b)}</span>`),
-        c.gen_ed ? `<span class="tag">${esc(c.gen_ed)}</span>` : "",
-        c.ethnic_studies ? `<span class="tag">Ethnic Studies</span>` : "",
-        ...c.levels.map(l => `<span class="tag">${esc(l)}</span>`),
-    ].join("");
+    const meta = [
+        `${c.credits} cr`,
+        ...c.breadths,
+        c.gen_ed,
+        c.ethnic_studies && "Ethnic Studies",
+        ...c.levels,
+    ].filter(Boolean).map(esc).join(" · ");
     return `
-        <div class="result">
-            <div class="result-top">
-                <div>
-                    <div class="result-name">${esc(c.name)}</div>
-                    <div class="result-title">${esc(c.title)}</div>
-                </div>
-                <button class="small" data-add="${i}" ${added ? "disabled" : ""}>${added ? "Added" : "+ Add"}</button>
+        <div class="row">
+            <div>
+                <div class="code">${esc(c.name)}</div>
+                <div class="muted">${esc(c.title)}</div>
             </div>
-            <div class="tags">${tags}</div>
+            ${gpaBlock(g)}
+            <div class="meta">${meta}</div>
+            <div class="row-actions">
+                <button class="link" data-add="${i}" ${added ? "disabled" : ""}>${added ? "Added" : "Add to list"}</button>
+            </div>
             <details>
-                <summary>Details</summary>
+                <summary>About this course</summary>
                 <p>${esc(c.description)}</p>
-                ${c.prerequisites ? `<p><b>Prereqs:</b> ${esc(c.prerequisites)}</p>` : ""}
-                ${c.typically_offered ? `<p><b>Typically offered:</b> ${esc(c.typically_offered)}</p>` : ""}
+                ${c.prerequisites ? `<p><b>Requires:</b> ${esc(c.prerequisites)}</p>` : ""}
+                ${c.typically_offered ? `<p><b>Usually offered:</b> ${esc(c.typically_offered)}</p>` : ""}
             </details>
         </div>`;
 }
@@ -461,23 +467,23 @@ function addCourse(c) {
 function renderMine() {
     const box = $("#mine");
     if (!state.mine.length) {
-        box.innerHTML = `<p class="hint">Nothing added yet.</p>`;
+        box.innerHTML = `<p class="status">None yet. Search above and add a few.</p>`;
         $("#credit-total").textContent = "";
         return;
     }
     const credits = state.mine.reduce((sum, c) => sum + (c.min_credits || 0), 0);
-    $("#credit-total").innerHTML = `${credits} credits${credits > 18 ? ` <span style="color:var(--danger)">· over 18</span>` : ""}`;
+    $("#credit-total").innerHTML = `${credits} credits${credits > 18 ? ` <span class="closed">(over 18)</span>` : ""}`;
     box.innerHTML = state.mine.map((c, i) => {
         const g = c.grades && (c.grades.recent || c.grades.overall);
         return `
             <div class="mine-row">
-                <span class="swatch" style="background:${COLORS[i % COLORS.length]}"></span>
-                <div class="grow">
-                    <div>${esc(c.name)} <span class="muted">· ${esc(c.credits)} cr</span></div>
-                    <div class="tiny muted">${esc(c.title)}</div>
+                <span class="dot" style="background:${COLORS[i % COLORS.length]}"></span>
+                <div>
+                    <div class="code">${esc(c.name)}</div>
+                    <div class="small muted">${esc(c.title)} · ${esc(c.credits)} cr</div>
                 </div>
-                ${g ? `<span class="tag gpa ${gpaClass(g.gpa)}">${g.gpa.toFixed(2)}</span>` : ""}
-                <button class="small danger" data-remove="${i}" aria-label="Remove">✕</button>
+                <span class="small ${g && g.gpa < 3 ? "closed" : "muted"}">${g ? g.gpa.toFixed(2) : ""}</span>
+                <button class="link small" data-remove="${i}">Remove</button>
             </div>`;
     }).join("");
     box.querySelectorAll("[data-remove]").forEach(btn => btn.addEventListener("click", () => {
@@ -493,7 +499,7 @@ function timeOptions(from, to, step = 30) {
     const opts = [];
     for (let m = toMin(from); m <= toMin(to); m += step) {
         const t = Math.floor(m / 60) * 100 + m % 60;
-        opts.push(`<option value="${t}">${fmtTime(t)}</option>`);
+        opts.push(`<option value="${t}">${fmtTime(t)}m</option>`);
     }
     return opts.join("");
 }
@@ -505,7 +511,7 @@ function initPrefs(saved) {
     $("#pref-start").value = p.earliest_start || 900;
     $("#pref-end").value = p.latest_end || 1700;
     $("#pref-days").innerHTML = DAYS.map(d =>
-        `<label class="chip"><input type="checkbox" value="${d}" ${(p.days_off || []).includes(d) ? "checked" : ""}><span>${d}</span></label>`).join("");
+        `<label><input type="checkbox" value="${d}" ${(p.days_off || []).includes(d) ? "checked" : ""}><span>${d}</span></label>`).join("");
     if (p.spacing) document.querySelector(`input[name=spacing][value=${p.spacing}]`).checked = true;
     if (p.avoid_waitlist === false) $("#pref-waitlist").checked = false;
     if (p.include_closed) $("#pref-closed").checked = true;
@@ -513,7 +519,7 @@ function initPrefs(saved) {
     state.busy = saved.busy || [];
     renderBusy();
 
-    document.querySelectorAll(".prefs input, .prefs select").forEach(el => el.addEventListener("change", save));
+    document.querySelectorAll(".pref input, .pref select").forEach(el => el.addEventListener("change", save));
 }
 
 function readPrefs() {
@@ -530,11 +536,13 @@ function readPrefs() {
 function renderBusy() {
     $("#busy").innerHTML = state.busy.map((b, i) => `
         <div class="busy-row" data-i="${i}">
-            ${DAYS.map(d => `<label class="chip"><input type="checkbox" value="${d}" ${b.days.includes(d) ? "checked" : ""}><span>${d[0]}${d === "Thu" ? "h" : ""}</span></label>`).join("")}
-            <select data-k="start">${timeOptions(700, 2200)}</select>
-            <span class="muted">–</span>
-            <select data-k="end">${timeOptions(730, 2300)}</select>
-            <button class="small danger" data-remove-busy="${i}" aria-label="Remove">✕</button>
+            <div class="toggles">
+                ${DAYS.map(d => `<label><input type="checkbox" value="${d}" ${b.days.includes(d) ? "checked" : ""}><span>${d.slice(0, 2)}</span></label>`).join("")}
+            </div>
+            <select data-k="start" aria-label="From">${timeOptions(700, 2200)}</select>
+            <span class="faint">to</span>
+            <select data-k="end" aria-label="Until">${timeOptions(730, 2300)}</select>
+            <button class="link small" data-remove-busy="${i}">Remove</button>
         </div>`).join("");
 
     document.querySelectorAll(".busy-row").forEach(row => {
@@ -566,13 +574,14 @@ $("#add-busy").addEventListener("click", () => {
 $("#generate").addEventListener("click", async () => {
     const out = $("#output");
     if (!state.mine.length) {
-        out.innerHTML = `<div class="empty"><b>Add some courses first</b>Search on the left and hit “+ Add”.</div>`;
+        out.innerHTML = `<div class="empty"><span class="serif">No courses yet.</span><span class="muted">Add at least one from the search on the left.</span></div>`;
         return;
     }
     const btn = $("#generate");
     btn.disabled = true;
-    btn.innerHTML = `<span class="spinner"></span> Building…`;
-    out.innerHTML = `<div class="empty"><span class="spinner"></span> Pulling live sections and seat counts…</div>`;
+    btn.firstElementChild.textContent = "Working";
+    btn.firstElementChild.classList.add("spin");
+    out.innerHTML = `<div class="empty"><span class="serif spin">Checking sections</span><span class="muted">Pulling live seats and times from Course Search &amp; Enroll.</span></div>`;
 
     const prefs = readPrefs();
     try {
@@ -591,60 +600,65 @@ $("#generate").addEventListener("click", async () => {
         state.plans = res.plans || [];
         state.activePlan = 0;
         renderOutput();
-        if (window.innerWidth <= 900) out.scrollIntoView({ behavior: "smooth" });
+        if (window.innerWidth <= 960) out.scrollIntoView({ behavior: "smooth" });
     } catch (e) {
-        out.innerHTML = `<div class="empty"><b>Something went wrong</b>Couldn't reach the server or the UW API. Try again in a moment.</div>`;
+        out.innerHTML = `<div class="empty"><span class="serif">That didn't work.</span><span class="muted">The server or UW's course API didn't respond. Try again in a minute.</span></div>`;
     } finally {
         btn.disabled = false;
-        btn.textContent = "Build my schedule";
+        btn.firstElementChild.textContent = "Make schedules";
+        btn.firstElementChild.classList.remove("spin");
     }
 });
 
 function renderOutput() {
     const res = state.lastResult;
     const out = $("#output");
+    $("#checked").textContent = "";
 
     if (res.error) {
-        out.innerHTML = `<div class="empty"><b>Hmm</b>${esc(res.error)}</div>`;
+        out.innerHTML = `<div class="empty"><span class="serif">Not yet.</span><span class="muted">${esc(res.error)}</span></div>`;
         return;
     }
 
     let alerts = "";
     if (res.unschedulable.length) {
-        alerts += `<div class="alert bad">No open section fits for: <b>${res.unschedulable.map(esc).join(", ")}</b>. Try “Include full sections”, or remove a busy time.</div>`;
+        alerts += `<div class="note-line bad"><b>${res.unschedulable.map(esc).join(", ")}</b>: no open section fits. Allow full sections or remove a busy time.</div>`;
     }
     if (res.online.length) {
-        alerts += `<div class="alert">Online / no set meeting time: <b>${res.online.map(esc).join(", ")}</b> — not shown on the calendar.</div>`;
+        alerts += `<div class="note-line"><b>${res.online.map(esc).join(", ")}</b>: online with no set meeting time, so not on the calendar.</div>`;
     }
 
     if (!state.plans.length) {
-        out.innerHTML = alerts + `<div class="empty"><b>No conflict-free schedule</b>These courses can't all fit together. Try removing one, or allow full sections.</div>`;
+        out.innerHTML = alerts + `<div class="empty"><span class="serif">These don't fit together.</span><span class="muted">Every combination has a time conflict. Try dropping a course or allowing full sections.</span></div>`;
         return;
     }
 
+    $("#checked").textContent = `${res.total >= 5000 ? "5,000+" : res.total.toLocaleString()} combinations checked`;
+
     const plan = state.plans[state.activePlan];
     const tabs = state.plans.map((p, i) => `
-        <button class="tab ${i === state.activePlan ? "active" : ""}" data-plan="${i}">
-            <div class="tiny muted">Plan ${"ABC"[i]}${i ? " · backup" : ""}</div>
-            <div class="score">${p.score}<span class="tiny muted"> / 100</span></div>
-            <div class="tiny muted">${p.credits} credits</div>
+        <button class="plan ${i === state.activePlan ? "active" : ""}" data-plan="${i}" aria-pressed="${i === state.activePlan}">
+            <span class="letter">${"ABC"[i]}</span>
+            <span class="small faint">${i ? "Backup" : "Best fit"}</span>
+            <span class="score"><b>${p.score}</b>/100 · ${p.credits} cr</span>
         </button>`).join("");
 
-    const notes = plan.notes.map(n => `<span class="tag">${esc(n)}</span>`).join("");
+    const notes = plan.notes.length
+        ? `<div class="notes">${plan.notes.map(n => /class on|before|after|waitlist/.test(n) ? `<span class="warn">${esc(n)}</span>` : esc(n)).join(" · ")}</div>`
+        : "";
     const walks = plan.tight_walks.map(w =>
-        `<div class="alert">${esc(w.day)}: ${esc(w.from)} → ${esc(w.to)} is a ~${w.walk} min walk with ${w.gap} min between.</div>`).join("");
+        `<div class="note-line">${esc(w.day)}: <b>${esc(w.from)}</b> to <b>${esc(w.to)}</b> is about a ${w.walk} minute walk, with ${w.gap} minutes between.</div>`).join("");
 
     out.innerHTML = `
-        <h2>Your schedule <small>${res.total >= 5000 ? "5000+" : res.total.toLocaleString()} possible combinations checked</small></h2>
         ${alerts}
-        <div class="tabs">${tabs}</div>
-        ${notes ? `<div class="notes">${notes}</div>` : ""}
+        <div class="plans">${tabs}</div>
+        ${notes}
         ${walks}
         ${calendar(plan)}
         ${sectionTable(plan)}
-        <div class="actions">
-            <button id="copy-numbers">Copy class numbers</button>
-            <button id="download-ics">Add to calendar (.ics)</button>
+        <div class="exports">
+            <button class="link" id="copy-numbers">Copy class numbers</button>
+            <button class="link" id="download-ics">Download for Google / Apple Calendar</button>
         </div>`;
 
     out.querySelectorAll("[data-plan]").forEach(btn => btn.addEventListener("click", () => {
@@ -663,25 +677,27 @@ function calendar(plan) {
 
     const startHour = Math.min(8, ...items.map(s => Math.floor(s.start / 100)));
     const endHour   = Math.max(17, ...items.map(s => Math.ceil(toMin(s.end) / 60)));
-    const pxPerMin  = 0.9;
+    const pxPerMin  = 0.95;
     const height    = (endHour - startHour) * 60 * pxPerMin;
     const top       = (t) => (toMin(t) - startHour * 60) * pxPerMin;
 
     let times = "", lines = "";
     for (let h = startHour; h <= endHour; h++) {
         const y = (h - startHour) * 60 * pxPerMin;
-        times += `<div class="cal-time" style="top:${y}px">${fmtTime(h * 100)}</div>`;
+        if (h > startHour) times += `<div class="cal-time" style="top:${y}px">${fmtTime(h * 100)}</div>`;
         lines += `<div class="cal-line" style="top:${y}px"></div>`;
     }
 
     const cols = DAYS.map(day => {
         const blocks = items.filter(s => s.days.includes(day)).map(s => {
-            const style = s.type === "busy" ? "" : `background:${colorFor(s.name)}`;
-            const label = s.type === "busy" ? "Busy" : `${esc(s.name)}`;
-            const sub   = s.type === "busy" ? "" : `${s.type.slice(0, 3).toUpperCase()} ${esc(s.section)}${s.building ? " · " + esc(s.building) : ""}`;
-            return `<div class="block ${s.type}" style="top:${top(s.start)}px;height:${(toMin(s.end) - toMin(s.start)) * pxPerMin}px;${style}"
-                        title="${label} ${sub} ${fmtTime(s.start)}–${fmtTime(s.end)}">
-                        <b>${label}</b>${sub}<br>${fmtTime(s.start)}–${fmtTime(s.end)}
+            const h = (toMin(s.end) - toMin(s.start)) * pxPerMin;
+            if (s.type === "busy") {
+                return `<div class="block busy" style="top:${top(s.start)}px;height:${h}px"><b>Busy</b>${fmtTime(s.start)}–${fmtTime(s.end)}</div>`;
+            }
+            const kind = s.type === "lecture" ? "" : "secondary";
+            return `<div class="block ${kind}" style="--c:${colorFor(s.name)};top:${top(s.start)}px;height:${h}px"
+                         title="${esc(s.name)} ${abbr(s.type)} ${esc(s.section)}, ${fmtTime(s.start)}–${fmtTime(s.end)}${s.building ? ", " + esc(s.building) : ""}">
+                        <b>${esc(s.name)}</b>${abbr(s.type)} ${esc(s.section)} · ${fmtTime(s.start)}${s.building ? `<br><span class="faint">${esc(s.building)}</span>` : ""}
                     </div>`;
         }).join("");
         return `<div class="cal-day" style="height:${height}px">${lines}${blocks}</div>`;
@@ -689,7 +705,7 @@ function calendar(plan) {
 
     return `
         <div class="calendar">
-            <div></div>${DAYS.map(d => `<div class="cal-head">${d}</div>`).join("")}
+            <div class="cal-head"></div>${DAYS.map(d => `<div class="cal-head">${d}</div>`).join("")}
             <div class="cal-times" style="height:${height}px">${times}</div>${cols}
         </div>`;
 }
@@ -697,16 +713,17 @@ function calendar(plan) {
 function sectionTable(plan) {
     const rows = plan.sections.map(s => {
         const inst = s.instructors.map(i =>
-            `${esc(i.name)}${i.grades ? ` <span class="tag gpa ${gpaClass(i.grades.gpa)}">${i.grades.gpa.toFixed(2)}</span>` : ""}`).join("<br>") || `<span class="muted">TBA</span>`;
-        const seats = s.status
-            ? `<span class="status-${s.status}">${s.status === "OPEN" ? `${s.open_seats ?? "?"} open` : s.status.toLowerCase()}</span>${s.waitlist ? `<br><span class="tiny muted">${s.waitlist} on waitlist</span>` : ""}`
-            : "";
+            `${esc(i.name)}${i.grades ? ` <span class="${i.grades.gpa < 3 ? "closed" : "faint"}">${i.grades.gpa.toFixed(2)}</span>` : ""}`).join("<br>") || `<span class="faint">TBA</span>`;
+        let seats = "";
+        if (s.status === "OPEN") seats = `<span class="open">${s.open_seats ?? "?"} open</span>`;
+        else if (s.status) seats = `<span class="${s.status.toLowerCase()}">${s.status.toLowerCase()}</span>`;
+        if (s.waitlist) seats += `<br><span class="small faint">${s.waitlist} waiting</span>`;
         return `
             <tr>
-                <td><span class="swatch" style="display:inline-block;background:${colorFor(s.name)}"></span> ${esc(s.name)}</td>
-                <td>${s.type.slice(0, 3).toUpperCase()} ${esc(s.section)}</td>
-                <td>${s.days.join("/")}<br><span class="muted">${fmtTime(s.start)}–${fmtTime(s.end)}</span></td>
-                <td>${esc(s.building || "—")}${s.room ? `<br><span class="muted">Rm ${esc(s.room)}</span>` : ""}</td>
+                <td style="white-space:nowrap"><span class="dot" style="background:${colorFor(s.name)}"></span>${esc(s.name)}</td>
+                <td>${abbr(s.type)} ${esc(s.section)}</td>
+                <td style="white-space:nowrap">${s.days.join(" ")}<br><span class="faint">${fmtTime(s.start)}–${fmtTime(s.end)}</span></td>
+                <td>${esc(s.building || "—")}${s.room ? `<br><span class="faint">Room ${esc(s.room)}</span>` : ""}</td>
                 <td>${inst}</td>
                 <td>${seats}</td>
                 <td>${s.class_number ?? ""}</td>
@@ -715,7 +732,7 @@ function sectionTable(plan) {
     return `
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Course</th><th>Section</th><th>When</th><th>Where</th><th>Instructor</th><th>Seats</th><th>Class #</th></tr></thead>
+                <thead><tr><th>Course</th><th>Section</th><th>When</th><th>Where</th><th>Instructor · GPA</th><th>Seats</th><th>Class no.</th></tr></thead>
                 <tbody>${rows}</tbody>
             </table>
         </div>`;
@@ -727,11 +744,11 @@ function copyNumbers() {
     const plan = state.plans[state.activePlan];
     const byCourse = {};
     for (const s of plan.sections) {
-        if (s.class_number) (byCourse[s.name] ||= new Set()).add(`${s.type.slice(0, 3).toUpperCase()} ${s.section} (#${s.class_number})`);
+        if (s.class_number) (byCourse[s.name] ||= new Set()).add(`${abbr(s.type)} ${s.section} (#${s.class_number})`);
     }
     const text = Object.entries(byCourse).map(([name, secs]) => `${name}: ${[...secs].join(", ")}`).join("\n");
     navigator.clipboard.writeText(text).then(() => {
-        $("#copy-numbers").textContent = "Copied!";
+        $("#copy-numbers").textContent = "Copied";
         setTimeout(() => { const b = $("#copy-numbers"); if (b) b.textContent = "Copy class numbers"; }, 1500);
     });
 }
@@ -758,7 +775,7 @@ function downloadIcs() {
         lines.push(
             "BEGIN:VEVENT",
             `UID:${state.term}-${s.class_number || i}-${i}@madplan`,
-            `SUMMARY:${s.name} ${s.type.slice(0, 3).toUpperCase()} ${s.section}`,
+            `SUMMARY:${s.name} ${abbr(s.type)} ${s.section}`,
             `LOCATION:${[s.building, s.room && "Rm " + s.room].filter(Boolean).join(" ")}`,
             `DTSTART;TZID=America/Chicago:${ymd(first)}T${hm(s.start)}`,
             `DTEND;TZID=America/Chicago:${ymd(first)}T${hm(s.end)}`,
@@ -786,7 +803,7 @@ function downloadIcs() {
     try {
         await initTerms(saved);
     } catch (e) {
-        $("#output").innerHTML = `<div class="empty"><b>Can't reach UW's course API</b>Check your connection and reload.</div>`;
+        $("#output").innerHTML = `<div class="empty"><span class="serif">Offline.</span><span class="muted">Couldn't reach UW's course API. Check your connection and reload.</span></div>`;
     }
 })();
 </script>
