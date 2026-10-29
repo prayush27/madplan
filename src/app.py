@@ -65,6 +65,16 @@ def terms():
     return jsonify(terms=uw_api.get_terms(), default=uw_api.default_term())
 
 
+@app.route("/api/stats")
+def stats():
+    """Headline numbers for the masthead strip."""
+    term = request.args.get("term") or uw_api.default_term()
+    any_breadth = {"bool": {"should": [{"term": {"breadths.code": c}} for c in "HLSBPN"]}}
+    classes, _ = uw_api.search_courses(term, "", page_size=1)
+    breadth, _ = uw_api.search_courses(term, "", filters=[any_breadth], page_size=1)
+    return jsonify(classes=classes, subjects=len(uw_api.subject_index_names(term)), breadth=breadth)
+
+
 @app.route("/api/search")
 def search():
     term  = request.args.get("term") or uw_api.default_term()

@@ -120,6 +120,11 @@ def subject_index(term):
     return index
 
 
+def subject_index_names(term):
+    """{'266': 'COMP SCI', ...} for every subject offered in the term."""
+    return _fetch(f"{BASE_URL}/subjectsMap/{term}")
+
+
 def get_subject_name(term, subject_code):
     """'266' -> 'COMP SCI'"""
     return _fetch(f"{BASE_URL}/subjectsMap/{term}").get(subject_code, subject_code)

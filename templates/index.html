@@ -53,12 +53,27 @@
             padding: 36px 0 28px; border-bottom: 1px solid var(--rule); align-items: end;
         }
         .hero h1 {
-            grid-column: span 8;
+            grid-column: span 7;
             font-family: 'Instrument Serif', Georgia, serif; font-weight: 400;
             font-size: clamp(40px, 5vw, 68px); line-height: 0.95; letter-spacing: -0.02em;
         }
         .hero h1 em { color: var(--red); }
-        .hero p { grid-column: span 4; color: var(--ink-2); max-width: 36ch; }
+        .hero p { grid-column: 9 / span 4; color: var(--ink-2); max-width: 38ch; }
+
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--rule); }
+        .stat { padding: 18px 0 16px 20px; border-left: 1px solid var(--hair); }
+        .stat:first-child { padding-left: 0; border-left: 0; }
+        .stat b {
+            display: block; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400;
+            font-size: clamp(30px, 3.4vw, 48px); line-height: 1; letter-spacing: -0.01em;
+        }
+        .stat span { display: block; margin-top: 6px; font-size: 12px; color: var(--ink-2); }
+        .stat .live::before {
+            content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px;
+            background: var(--red); vertical-align: 1px; animation: blink 2s ease-in-out infinite;
+        }
+        @keyframes blink { 50% { opacity: 0.25; } }
+        @media (prefers-reduced-motion: reduce) { .stat .live::before { animation: none; } }
 
         /* ── Layout ───────────────────────────────────── */
         .layout {
@@ -218,6 +233,10 @@
             :root { --gutter: 16px; }
             .hero { padding: 24px 0 20px; gap: 12px; }
             .hero h1, .hero p { grid-column: 1 / -1; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .stat { padding: 14px 0 12px 14px; }
+            .stat:nth-child(3) { padding-left: 0; border-left: 0; border-top: 1px solid var(--hair); }
+            .stat:nth-child(4) { border-top: 1px solid var(--hair); }
             .left, .right { grid-column: 1 / -1; }
             .plan .letter { font-size: 44px; }
             .plan { padding: 12px 8px 12px 0; grid-template-columns: 1fr; }
@@ -234,8 +253,15 @@
     </div>
 
     <div class="hero">
-        <h1>Plan your<br><em>semester.</em></h1>
-        <p>Say what you still need and what you're into. You get classes that count, fit your week, and have been graded kindly. Seats are live from Course Search &amp; Enroll.</p>
+        <h1>Plan your <em>semester.</em></h1>
+        <p>Say what you still need and what you're into. You get classes that count, fit your week, and have been graded kindly.</p>
+    </div>
+
+    <div class="stats" aria-live="polite">
+        <div class="stat"><b id="stat-classes">—</b><span>classes offered <span id="stat-term" style="display:inline;margin:0"></span></span></div>
+        <div class="stat"><b id="stat-subjects">—</b><span>subjects</span></div>
+        <div class="stat"><b id="stat-breadth">—</b><span>count toward a breadth</span></div>
+        <div class="stat"><b id="stat-days">—</b><span class="live" id="stat-days-label">seats live from Course Search &amp; Enroll</span></div>
     </div>
 
     <div class="layout">
@@ -443,6 +469,34 @@ async function initTerms(saved) {
     state.term = res.terms.some(t => t.code === saved.term) ? saved.term : res.default;
     $("#term").innerHTML = res.terms.map(t =>
         `<option value="${t.code}" ${t.code === state.term ? "selected" : ""}>${esc(t.name)}</option>`).join("");
+    loadStats();
+}
+
+async function loadStats() {
+    const term = state.terms.find(t => t.code === state.term);
+    $("#stat-term").textContent = term ? `in ${term.name}` : "";
+
+    // Countdown to the first day of classes, or how far into the term we are
+    const day = 864e5, today = new Date(new Date().toDateString());
+    const start = new Date(term.start + "T00:00:00"), end = new Date(term.end + "T00:00:00");
+    if (today < start) {
+        const days = Math.round((start - today) / day);
+        $("#stat-days").textContent = days.toLocaleString();
+        $("#stat-days-label").textContent = `day${days === 1 ? "" : "s"} until classes start`;
+    } else if (today <= end) {
+        $("#stat-days").textContent = `Week ${Math.floor((today - start) / day / 7) + 1}`;
+        $("#stat-days-label").textContent = `of ${Math.ceil((end - start) / day / 7)}, seats live`;
+    } else {
+        $("#stat-days").textContent = "Over";
+        $("#stat-days-label").textContent = "this term has ended";
+    }
+
+    try {
+        const s = await fetch(`/api/stats?term=${state.term}`).then(r => r.json());
+        $("#stat-classes").textContent = s.classes.toLocaleString();
+        $("#stat-subjects").textContent = s.subjects.toLocaleString();
+        $("#stat-breadth").textContent = s.breadth.toLocaleString();
+    } catch (e) { /* leave the dashes */ }
 }
 
 $("#term").addEventListener("change", (e) => {
@@ -453,6 +507,7 @@ $("#term").addEventListener("change", (e) => {
     }
     state.term = e.target.value;
     state.mine = [];
+    loadStats();
     renderMine();
     runSearch();
     save();
