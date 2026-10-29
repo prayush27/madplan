@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Schedules</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #080b12;
+            --surface: #0e1220;
+            --card: #111827;
+            --border: #1e2a40;
+            --accent: #38bdf8;
+            --accent2: #818cf8;
+            --text: #e2e8f0;
+            --muted: #4b5563;
+            --soft: #94a3b8;
+            --cell-height: 48px;
+        }
+
+        body {
+            font-family: 'DM Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 48px 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 48px 48px;
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: -200px; left: -200px;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(56,189,248,0.07) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 12px;
+            letter-spacing: 0.05em;
+            margin-bottom: 32px;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .back-link:hover { opacity: 1; }
+
+        .header {
+            margin-bottom: 40px;
+            border-left: 3px solid var(--accent);
+            padding-left: 16px;
+        }
+
+        .header h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+        }
+
+        .header p { color: var(--soft); font-size: 13px; }
+        .header p strong { color: var(--accent); }
+
+        /* 2-column collage grid */
+        .schedules-collage {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .schedule-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 22px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .schedule-card:hover { border-color: #2e3f60; }
+
+        .schedule-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            opacity: 0.6;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .rank {
+            font-family: 'Syne', sans-serif;
+            font-size: 17px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .rank span { color: var(--accent); }
+
+        .badges {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .score-badge {
+            font-size: 11px;
+            color: var(--accent);
+            border: 1px solid rgba(56,189,248,0.3);
+            padding: 3px 12px;
+            border-radius: 20px;
+            letter-spacing: 0.05em;
+        }
+
+        .overload-badge {
+            font-size: 11px;
+            color: #f87171;
+            border: 1px solid rgba(248,113,113,0.3);
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+
+        /* Course list */
+        .course-list {
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .course-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 9px 12px;
+            border-bottom: 1px solid var(--border);
+            font-size: 11px;
+            gap: 8px;
+        }
+
+        .course-row:last-child { border-bottom: none; }
+
+        .course-row.is-discussion {
+            background: rgba(129,140,248,0.03);
+            border-left: 2px solid rgba(129,140,248,0.3);
+        }
+
+        .course-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .dot.lecture    { background: var(--accent); }
+        .dot.discussion { background: var(--accent2); }
+
+        .course-name-text {
+            color: #fff;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .type-tag {
+            font-size: 9px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .type-tag.lecture {
+            color: var(--accent);
+            background: rgba(56,189,248,0.08);
+            border: 1px solid rgba(56,189,248,0.2);
+        }
+
+        .type-tag.discussion {
+            color: var(--accent2);
+            background: rgba(129,140,248,0.08);
+            border: 1px solid rgba(129,140,248,0.2);
+        }
+
+        .section-tag {
+            color: var(--muted);
+            font-size: 10px;
+            background: var(--surface);
+            padding: 1px 6px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .course-time { color: var(--soft); font-size: 10px; flex-shrink: 0; }
+
+        .credits-badge {
+            background: var(--surface);
+            color: var(--muted);
+            font-size: 10px;
+            padding: 1px 8px;
+            border-radius: 20px;
+            flex-shrink: 0;
+        }
+
+        /* Day Grid */
+        .grid-label {
+            font-size: 10px;
+            color: var(--muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .day-grid {
+            display: grid;
+            grid-template-columns: 42px repeat(5, 1fr);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            font-size: 10px;
+        }
+
+        .day-header {
+            background: var(--surface);
+            padding: 7px 4px;
+            text-align: center;
+            color: var(--soft);
+            font-size: 10px;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .time-header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+        }
+
+        .time-col-cell {
+            height: var(--cell-height);
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid rgba(30,42,64,0.6);
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 4px;
+            color: var(--muted);
+            font-size: 9px;
+            background: var(--surface);
+            line-height: 1.3;
+            text-align: center;
+        }
+
+        .day-column {
+            position: relative;
+            border-right: 1px solid var(--border);
+        }
+
+        .day-column:last-child { border-right: none; }
+
+        .hour-row-bg {
+            height: var(--cell-height);
+            border-bottom: 1px solid rgba(30,42,64,0.5);
+        }
+
+        .class-block {
+            position: absolute;
+            left: 2px;
+            right: 2px;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            text-align: center;
+            overflow: hidden;
+            z-index: 2;
+            padding: 3px 2px;
+        }
+
+        .class-block.lecture {
+            background: linear-gradient(135deg, rgba(56,189,248,0.18), rgba(129,140,248,0.12));
+            border: 1px solid rgba(56,189,248,0.45);
+            color: var(--accent);
+        }
+
+        .class-block.discussion {
+            background: linear-gradient(135deg, rgba(129,140,248,0.18), rgba(56,189,248,0.08));
+            border: 1px solid rgba(129,140,248,0.45);
+            color: var(--accent2);
+        }
+
+        .block-name {
+            font-weight: 500;
+            color: #fff;
+            font-size: 9px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            text-align: center;
+            padding: 0 2px;
+        }
+
+        .block-time {
+            font-size: 8px;
+            opacity: 0.85;
+            white-space: nowrap;
+        }
+
+        .block-type {
+            font-size: 7px;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .no-schedules {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 60px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        @media (max-width: 768px) {
+            .schedules-collage { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← back to planner</a>
+
+        <div class="header">
+            <h1>Generated Schedules</h1>
+            {% if ranked %}
+            <p>Found <strong>{{ ranked|length }}</strong> valid schedules — ranked best to worst</p>
+            {% endif %}
+        </div>
+
+        {% if ranked %}
+
+        {% set days = ["Mon", "Tue", "Wed", "Thu", "Fri"] %}
+        {% set hours = [800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700] %}
+        {% set cell_height = 48 %}
+
+        <div class="schedules-collage">
+        {% for score, schedule in ranked %}
+
+        <div class="schedule-card">
+            <div class="card-header">
+                <div class="rank">Schedule <span>#{{ loop.index }}</span></div>
+                <div class="badges">
+                    <div class="score-badge">{{ score }} / {{ max_score }}</div>
+                    {% if credit_load_warning(schedule) %}
+                    <div class="overload-badge">⚠ Overloaded</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Course List -->
+            <div class="course-list">
+                {% for course in schedule %}
+                <div class="course-row {% if course.section_type == 'discussion' %}is-discussion{% endif %}">
+                    <div class="course-left">
+                        <div class="dot {{ course.section_type }}"></div>
+                        <span class="course-name-text">{{ course.name }}</span>
+                        <span class="type-tag {{ course.section_type }}">
+                            {{ "LEC" if course.section_type == "lecture" else "DIS" }}
+                        </span>
+                        <span class="section-tag">{{ course.section }}</span>
+                    </div>
+                    <span class="course-time">
+                        {{ course.days | join(", ") }} ·
+                        {{ format_time(course.start_time) }}–{{ format_time(course.end_time) }}
+                    </span>
+                    {% if course.section_type == "lecture" %}
+                    <span class="credits-badge">{{ course.credits }} cr</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Day Grid -->
+            <div class="grid-label">Weekly View</div>
+            <div class="day-grid">
+
+                <div class="time-header day-header"></div>
+                {% for day in days %}
+                <div class="day-header">{{ day }}</div>
+                {% endfor %}
+
+                <div class="time-col">
+                    {% for hour in hours %}
+                    {% set h = hour // 100 %}
+                    {% set period = "AM" if h < 12 else "PM" %}
+                    {% set display_h = h if h <= 12 else h - 12 %}
+                    <div class="time-col-cell">{{ display_h }}:00<br>{{ period }}</div>
+                    {% endfor %}
+                </div>
+
+                {% for day in days %}
+                <div class="day-column">
+                    {% for hour in hours %}
+                    <div class="hour-row-bg"></div>
+                    {% endfor %}
+
+                    {% for course in schedule %}
+                        {% if day in course.days %}
+                            {% set start_h = course.start_time // 100 %}
+                            {% set start_m = course.start_time % 100 %}
+                            {% set end_h   = course.end_time // 100 %}
+                            {% set end_m   = course.end_time % 100 %}
+                            {% set start_mins = (start_h * 60 + start_m) - (8 * 60) %}
+                            {% set end_mins   = (end_h * 60 + end_m)   - (8 * 60) %}
+                            {% set duration   = end_mins - start_mins %}
+                            {% set px_per_min = cell_height / 60 %}
+                            {% set top_px    = (start_mins * px_per_min) | round | int %}
+                            {% set height_px = (duration   * px_per_min) | round | int %}
+
+                            <div class="class-block {{ course.section_type }}" style="top: {{ top_px }}px; height: {{ height_px }px;">
+                                <span class="block-name">{{ course.name }}</span>
+                                <span class="block-time">
+                                    {{ format_time(course.start_time) }}–{{ format_time(course.end_time) }}
+                                </span>
+                                <span class="block-type">
+                                    {{ "lec" if course.section_type == "lecture" else "dis" }}
+                                </span>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endfor %}
+
+            </div>
+        </div>
+        {% endfor %}
+        </div>
+
+        {% else %}
+            <div class="no-schedules">
+                <p>No valid schedules found. Try selecting different courses.</p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
