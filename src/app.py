@@ -65,6 +65,16 @@ def terms():
     return jsonify(terms=uw_api.get_terms(), default=uw_api.default_term())
 
 
+@app.route("/api/subject")
+def subject():
+    """Resolves shorthand like 'cs' to {'code': '266', 'name': 'COMP SCI'}."""
+    term = request.args.get("term") or uw_api.default_term()
+    code, _ = uw_api.resolve_query(term, request.args.get("q", ""))
+    if not code:
+        return jsonify(error="Unknown subject"), 404
+    return jsonify(code=code, name=uw_api.get_subject_name(term, code))
+
+
 @app.route("/api/stats")
 def stats():
     """Headline numbers for the masthead strip."""

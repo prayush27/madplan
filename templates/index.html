@@ -106,6 +106,7 @@
         .top select { width: auto; border: 0; padding: 4px 18px 4px 0; font-weight: 500; }
 
         button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+        a { color: inherit; }
         .link { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
         .link:hover { color: var(--red); }
         .link:disabled { text-decoration: none; color: var(--ink-3); cursor: default; }
@@ -224,6 +225,25 @@
 
         .exports { display: flex; flex-wrap: wrap; gap: 12px 28px; padding-top: 20px; font-size: 14px; }
 
+        /* Roadmap */
+        .roadmap-section { margin-top: -48px; padding-bottom: 72px; }
+        .roadmap { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); border-bottom: 1px solid var(--rule); }
+        .sem { padding: 14px 16px 18px; border-left: 1px solid var(--hair); min-width: 0; }
+        .sem:first-child { border-left: 0; padding-left: 0; }
+        .sem-head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 8px; border-bottom: 1px solid var(--hair); }
+        .sem-head b { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 22px; }
+        .sem-head.current b { color: var(--red); }
+        .sem-course { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 8px; padding: 8px 0; border-bottom: 1px solid var(--hair); font-size: 13px; }
+        .sem-course span.small { flex-basis: 100%; }
+        .sem-course .warn { color: var(--amber); }
+        .sem input[type=text] { font-size: 13px; padding: 8px 0; }
+        .sem-results button { display: block; width: 100%; text-align: left; padding: 6px 0; font-size: 12px; border-bottom: 1px solid var(--hair); }
+        .sem-results button:hover { color: var(--red); }
+        .progress { padding-top: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0 var(--gutter); }
+        .progress div { padding: 8px 0; border-bottom: 1px solid var(--hair); font-size: 13px; display: flex; justify-content: space-between; gap: 12px; }
+        .progress .open-req { color: var(--red); }
+        .shared-banner { padding: 12px 0; border-bottom: 1px solid var(--hair); font-size: 13px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
         .spin::after { content: "…"; display: inline-block; animation: dots 1s steps(4) infinite; width: 1.2em; overflow: hidden; vertical-align: bottom; }
         @keyframes dots { from { width: 0; } to { width: 1.2em; } }
 
@@ -234,6 +254,8 @@
             .hero { padding: 24px 0 20px; gap: 12px; }
             .hero h1, .hero p { grid-column: 1 / -1; }
             .stats { grid-template-columns: repeat(2, 1fr); }
+            .roadmap-section { margin-top: 0; }
+            .sem { border-left: 0; padding-left: 0; padding-right: 0; }
             .stat { padding: 14px 0 12px 14px; }
             .stat:nth-child(3) { padding-left: 0; border-left: 0; border-top: 1px solid var(--hair); }
             .stat:nth-child(4) { border-top: 1px solid var(--hair); }
@@ -391,6 +413,13 @@
         </div>
     </div>
 
+    <section class="section roadmap-section" id="roadmap-section">
+        <div class="section-head"><span class="num">05</span><h2>Roadmap</h2><span class="aside" id="roadmap-total"></span></div>
+        <p class="status">Sketch the semesters ahead. Add courses to any term, or send a finished schedule here with “Add to roadmap”.</p>
+        <div class="roadmap" id="roadmap"></div>
+        <div class="progress" id="progress"></div>
+    </section>
+
     <footer>
         <span>A personal project. Not affiliated with UW–Madison.</span>
         <span>Sections from Course Search &amp; Enroll · Grades from Madgrades</span>
@@ -414,6 +443,7 @@ const state = {
     activePlan: 0,
     lastResult: null,
     colorOrder: [],  // course names in the order they get colors
+    roadmap: {},     // {termCode: [course summaries]}
 };
 
 // ── Helpers ─────────────────────────────────────────────────
@@ -450,7 +480,7 @@ function colorFor(name) {
 function save() {
     try {
         localStorage.setItem("madplan", JSON.stringify({
-            term: state.term, mine: state.mine, busy: state.busy, reqs: state.reqs,
+            term: state.term, mine: state.mine, busy: state.busy, reqs: state.reqs, roadmap: state.roadmap,
             prefs: readPrefs(), needs: readNeeds(),
         }));
     } catch (e) { /* storage unavailable — fine, just won't persist */ }
@@ -556,6 +586,7 @@ function renderReqs() {
     box.querySelectorAll("[data-remove-req]").forEach(btn => btn.addEventListener("click", () => {
         state.reqs.splice(+btn.dataset.removeReq, 1);
         renderReqs();
+        renderProgress();
         save();
     }));
 }
@@ -566,16 +597,27 @@ $("#req-add").addEventListener("change", (e) => {
     if (!kind) return;
     state.reqs.push({ kind: kind.kind, label: kind.label });
     renderReqs();
+    renderProgress();
     save();
 });
 
-function addSubjectReq() {
-    const subject = $("#req-subject").value.trim();
+async function addSubjectReq() {
+    const input = $("#req-subject");
+    const subject = input.value.trim();
     if (!subject) return;
+    const res = await fetch(`/api/subject?term=${state.term}&q=${encodeURIComponent(subject)}`).then(r => r.json());
+    if (res.error) {
+        input.value = "";
+        input.placeholder = `No subject “${subject}”`;
+        return;
+    }
     const min = +$("#req-level").value;
-    state.reqs.push({ kind: "subject", subject, min, label: `${subject.toUpperCase()} course${min ? ` ${min}+` : ""}` });
-    $("#req-subject").value = "";
+    state.reqs.push({ kind: "subject", subject, code: res.code, min,
+                      label: `${res.name} ${min ? `${min}+` : "course"}` });
+    input.value = "";
+    input.placeholder = "cs, econ…";
     renderReqs();
+    renderProgress();
     save();
 }
 $("#req-subject-add").addEventListener("click", addSubjectReq);
@@ -853,12 +895,17 @@ function renderOutput() {
         return;
     }
 
-    $("#checked").textContent = res.checked != null
+    $("#checked").textContent = res.shared ? "shared with you"
+        : res.checked != null
         ? `${res.checked.toLocaleString()} classes considered, ${res.fitting.toLocaleString()} fit`
         : `${res.total >= 5000 ? "5,000+" : res.total.toLocaleString()} combinations checked`;
+    if (res.shared) {
+        alerts = `<div class="shared-banner"><span>Someone shared their ${esc(res.termName)} schedule with you. Seats may have changed since.</span>
+                  <a class="link" href="/">Plan your own</a></div>` + alerts;
+    }
 
     const plan = state.plans[state.activePlan];
-    state.colorOrder = [...state.mine.map(c => c.name), ...(plan.picks || []).map(p => p.name)];
+    if (!res.shared) state.colorOrder = [...state.mine.map(c => c.name), ...(plan.picks || []).map(p => p.name)];
 
     const tabs = state.plans.map((p, i) => `
         <button class="plan ${i === state.activePlan ? "active" : ""}" data-plan="${i}" aria-pressed="${i === state.activePlan}">
@@ -875,7 +922,7 @@ function renderOutput() {
 
     out.innerHTML = `
         ${alerts}
-        <div class="plans">${tabs}</div>
+        ${res.shared ? "" : `<div class="plans">${tabs}</div>`}
         ${notes}
         ${walks}
         ${plan.picks ? whyBlock(plan) : ""}
@@ -884,6 +931,8 @@ function renderOutput() {
         <div class="exports">
             <button class="link" id="copy-numbers">Copy class numbers</button>
             <button class="link" id="download-ics">Download for Google / Apple Calendar</button>
+            ${res.shared ? "" : `<button class="link" id="to-roadmap">Add to roadmap</button>
+            <button class="link" id="share">Copy share link</button>`}
         </div>
         ${alternativesBlock(res)}`;
 
@@ -893,6 +942,10 @@ function renderOutput() {
     }));
     $("#copy-numbers").addEventListener("click", copyNumbers);
     $("#download-ics").addEventListener("click", downloadIcs);
+    if (!res.shared) {
+        $("#to-roadmap").addEventListener("click", planToRoadmap);
+        $("#share").addEventListener("click", copyShareLink);
+    }
     bindAlternatives(out);
 }
 
@@ -1029,6 +1082,181 @@ function sectionTable(plan) {
         </div>`;
 }
 
+// ── Roadmap ─────────────────────────────────────────────────
+
+const has = (c, ...codes) => (c.breadth_codes || []).some(x => codes.includes(x));
+const REQ_MATCH = {
+    humanities: c => has(c, "H", "L"),
+    literature: c => has(c, "L"),
+    social:     c => has(c, "S"),
+    natural:    c => has(c, "B", "P", "N"),
+    biological: c => has(c, "B", "N"),
+    physical:   c => has(c, "P", "N"),
+    ethnic:     c => !!c.ethnic_studies,
+    comm_a:     c => c.gen_ed_code === "COM A",
+    comm_b:     c => c.gen_ed_code === "COM B",
+    qr_a:       c => c.gen_ed_code === "QR-A",
+    qr_b:       c => c.gen_ed_code === "QR-B",
+    elective:   c => true,
+};
+
+function reqMatches(req, c) {
+    if (req.kind === "subject") {
+        return c.subject_code === req.code && (parseInt(c.catalog_number) || 0) >= (req.min || 0);
+    }
+    return (REQ_MATCH[req.kind] || (() => false))(c);
+}
+
+function roadmapTerms() {
+    // UW term codes: "1" + academic year (27 = 2026–27) + season (2 fall, 4 spring)
+    if (!state.terms.length) return [];
+    let yy = +state.terms[0].code.slice(1, 3), season = state.terms[0].code[3];
+    if (season === "6") { yy += 1; season = "2"; }
+    const terms = [];
+    for (let i = 0; i < 6; i++) {
+        const code = `1${yy}${season}`;
+        const name = season === "2" ? `Fall ${2000 + yy - 1}` : `Spring ${2000 + yy}`;
+        terms.push({ code, name, season: season === "2" ? "Fall" : "Spring" });
+        if (season === "2") season = "4"; else { season = "2"; yy += 1; }
+    }
+    return terms;
+}
+
+function offeredNote(c, season) {
+    const t = c.typically_offered || "";
+    if (/every other/i.test(t)) return t.toLowerCase();
+    if (/occasionally/i.test(t)) return "offered occasionally";
+    if (/fall|spring|summer/i.test(t) && !t.toLowerCase().includes(season.toLowerCase())) return `usually ${t.toLowerCase()} only`;
+    return "";
+}
+
+function renderRoadmap() {
+    const terms = roadmapTerms();
+    if (!terms.length) return;
+    let total = 0;
+    $("#roadmap").innerHTML = terms.map(t => {
+        const courses = state.roadmap[t.code] || [];
+        const credits = courses.reduce((sum, c) => sum + (c.min_credits || 0), 0);
+        total += credits;
+        return `
+            <div class="sem" data-term="${t.code}">
+                <div class="sem-head ${t.code === state.term ? "current" : ""}"><b>${esc(t.name)}</b><span class="small muted">${credits} cr</span></div>
+                ${courses.map((c, i) => {
+                    // Terms open in Course Search & Enroll show real offerings, so only warn for later ones
+                    const note = state.terms.some(o => o.code === t.code) ? "" : offeredNote(c, t.season);
+                    return `<div class="sem-course">
+                        <span class="code">${esc(c.name)}</span>
+                        <button class="link small" data-rm-term="${t.code}" data-rm-i="${i}">Remove</button>
+                        <span class="small muted">${esc(c.title)}${note ? ` · <span class="warn">${esc(note)}</span>` : ""}</span>
+                    </div>`;
+                }).join("")}
+                <input type="text" placeholder="Add a course…" data-add-term="${t.code}" autocomplete="off" aria-label="Add a course to ${esc(t.name)}">
+                <div class="sem-results"></div>
+            </div>`;
+    }).join("");
+    $("#roadmap-total").textContent = total ? `${total} credits planned` : "";
+
+    $("#roadmap").querySelectorAll("[data-rm-term]").forEach(btn => btn.addEventListener("click", () => {
+        state.roadmap[btn.dataset.rmTerm].splice(+btn.dataset.rmI, 1);
+        renderRoadmap();
+        save();
+    }));
+    $("#roadmap").querySelectorAll("[data-add-term]").forEach(input => {
+        let timer;
+        const results = input.nextElementSibling;
+        input.addEventListener("input", () => {
+            clearTimeout(timer);
+            timer = setTimeout(async () => {
+                const q = input.value.trim();
+                if (!q) { results.innerHTML = ""; return; }
+                const res = await fetch(`/api/search?term=${state.term}&q=${encodeURIComponent(q)}`).then(r => r.json());
+                if (input.value.trim() !== q) return;
+                const top = res.courses.slice(0, 5);
+                results.innerHTML = top.map((c, i) => `<button data-i="${i}"><b>${esc(c.name)}</b> ${esc(c.title)}</button>`).join("")
+                    || `<p class="status">No match.</p>`;
+                results.querySelectorAll("button").forEach(btn => btn.addEventListener("click", () => {
+                    addToRoadmap(input.dataset.addTerm, [top[+btn.dataset.i]]);
+                }));
+            }, 300);
+        });
+    });
+    renderProgress();
+}
+
+function addToRoadmap(termCode, courses) {
+    const list = (state.roadmap[termCode] ||= []);
+    for (const c of courses) {
+        if (!list.some(x => x.name === c.name)) list.push(c);
+    }
+    renderRoadmap();
+    save();
+}
+
+function renderProgress() {
+    if (!state.reqs.length) { $("#progress").innerHTML = ""; return; }
+    const terms = roadmapTerms();
+    $("#progress").innerHTML = state.reqs.map(r => {
+        for (const t of terms) {
+            const c = (state.roadmap[t.code] || []).find(c => reqMatches(r, c));
+            if (c) return `<div><span>${esc(r.label)}</span><span class="muted">${esc(c.name)} · ${esc(t.name)}</span></div>`;
+        }
+        return `<div><span>${esc(r.label)}</span><span class="open-req">still open</span></div>`;
+    }).join("");
+}
+
+function planToRoadmap() {
+    const plan = state.plans[state.activePlan];
+    const terms = roadmapTerms();
+    const code = terms.some(t => t.code === state.term) ? state.term : terms[0].code;
+    addToRoadmap(code, [...state.mine, ...(plan.picks || [])]);
+    $("#to-roadmap").textContent = "Added";
+    $("#roadmap-section").scrollIntoView({ behavior: "smooth" });
+}
+
+// ── Sharing ─────────────────────────────────────────────────
+
+function encodeShare(obj) {
+    const bytes = new TextEncoder().encode(JSON.stringify(obj));
+    return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function decodeShare(str) {
+    const bin = atob(str.replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, ch => ch.charCodeAt(0))));
+}
+
+function copyShareLink() {
+    const plan = state.plans[state.activePlan];
+    const term = state.terms.find(t => t.code === state.term);
+    const data = {
+        t: state.term, n: term.name, c: plan.credits,
+        s: plan.sections.map(s => [s.name, s.type, s.section, s.days, s.start, s.end, s.building, s.room,
+                                   s.class_number, s.instructors.map(i => i.name)]),
+    };
+    const url = `${location.origin}/#share=${encodeShare(data)}`;
+    navigator.clipboard.writeText(url).then(() => {
+        $("#share").textContent = "Link copied";
+        setTimeout(() => { const b = $("#share"); if (b) b.textContent = "Copy share link"; }, 1500);
+    });
+}
+
+function showShared() {
+    const m = location.hash.match(/^#share=(.+)$/);
+    if (!m) return false;
+    let data;
+    try { data = decodeShare(m[1]); } catch (e) { return false; }
+    const sections = data.s.map(([name, type, section, days, start, end, building, room, class_number, instructors]) =>
+        ({ name, type, section, days, start, end, building, room, class_number,
+           instructors: (instructors || []).map(n => ({ name: n })) }));
+    if (state.terms.some(t => t.code === data.t)) { state.term = data.t; $("#term").value = data.t; }
+    state.colorOrder = [...new Set(sections.map(s => s.name))];
+    state.plans = [{ score: "—", notes: [], credits: data.c, sections, tight_walks: [] }];
+    state.activePlan = 0;
+    state.lastResult = { shared: true, termName: data.n, plans: state.plans };
+    renderOutput();
+    return true;
+}
+
 // ── Export ──────────────────────────────────────────────────
 
 function copyNumbers() {
@@ -1089,10 +1317,13 @@ function downloadIcs() {
 (async () => {
     const saved = load();
     state.mine = saved.mine || [];
+    state.roadmap = saved.roadmap || {};
     initPrefs(saved);
     renderMine();
     try {
         await Promise.all([initTerms(saved), initNeeds(saved)]);
+        renderRoadmap();
+        if (showShared()) $("#output").scrollIntoView();
     } catch (e) {
         $("#output").innerHTML = `<div class="empty"><span class="serif">Offline.</span><span class="muted">Couldn't reach UW's course API. Check your connection and reload.</span></div>`;
     }
