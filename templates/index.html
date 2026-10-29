@@ -202,6 +202,9 @@
         .dars-req { display: grid; grid-template-columns: auto 1fr auto; gap: 0 10px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--hair); font-size: 13px; cursor: pointer; }
         .dars-req input { accent-color: var(--red); }
         .dars-req .small { grid-column: 2 / -1; }
+        .dars-reqs-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+        .dars-reqs-head .link { flex: none; color: var(--ink-2); }
+        .dars-reqs-head .link:hover { color: var(--red); }
         .dars-group { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding: 14px 0 4px; }
 
         /* Why these / alternatives */
@@ -893,7 +896,11 @@ function renderDars(error) {
     $("#pref-prereqs").parentElement.lastChild.textContent = " Checked against your DARS";
 
     let group = null;
-    $("#dars-reqs").innerHTML = `<p class="status">Tick what you want to work on this semester.</p>` + d.requirements.map((r, i) => {
+    $("#dars-reqs").innerHTML = `
+        <div class="dars-reqs-head">
+            <p class="status">Tick what you want to work on this semester.</p>
+            <button class="link small" id="dars-untick">Clear all</button>
+        </div>` + d.requirements.map((r, i) => {
         const head = r.group !== group ? `<div class="dars-group">${esc(r.group)}</div>` : "";
         group = r.group;
         return `${head}
@@ -909,6 +916,11 @@ function renderDars(error) {
         d.requirements[+cb.dataset.darsI].on = cb.checked;
         save();
     }));
+    $("#dars-untick").addEventListener("click", () => {
+        d.requirements.forEach(r => r.on = false);
+        $("#dars-reqs").querySelectorAll("[data-dars-i]").forEach(cb => cb.checked = false);
+        save();
+    });
 }
 
 // ── Search ──────────────────────────────────────────────────
