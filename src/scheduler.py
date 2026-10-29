@@ -60,7 +60,9 @@ def generate_schedules(course_entries, include_closed=False, blocked=None, limit
                 continue
             current.extend(sections)
             backtrack(index + 1, current)
-            del current[-len(sections):]
+            # Online packages have no sections; current[-0:] would wipe the whole list
+            if sections:
+                del current[-len(sections):]
 
     backtrack(0, [])
     return valid_schedules

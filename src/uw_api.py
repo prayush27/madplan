@@ -120,6 +120,11 @@ def subject_index(term):
     return index
 
 
+def get_subject_name(term, subject_code):
+    """'266' -> 'COMP SCI'"""
+    return _fetch(f"{BASE_URL}/subjectsMap/{term}").get(subject_code, subject_code)
+
+
 def resolve_query(term, query):
     """
     Turns shorthand like 'cs400', 'compsci 400' or 'ece' into an exact UW search.
@@ -180,7 +185,9 @@ def summarize_course(hit):
         "max_credits":    hit.get('maximumCredits') or 0,
         "prerequisites":  hit.get('enrollmentPrerequisites') or "",
         "breadths":       [b['description'] for b in hit.get('breadths') or []],
+        "breadth_codes":  [b['code'] for b in hit.get('breadths') or []],
         "gen_ed":         (hit.get('generalEd') or {}).get('description', ""),
+        "gen_ed_code":    (hit.get('generalEd') or {}).get('code', ""),
         "ethnic_studies": (hit.get('ethnicStudies') or {}).get('description', ""),
         "levels":         [l['description'] for l in hit.get('levels') or []],
         "ls_credit":      (hit.get('lettersAndScienceCredits') or {}).get('description', ""),

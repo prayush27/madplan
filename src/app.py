@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, jsonify, render_template, request
 
 import madgrades
+import suggest
 import uw_api
 from course import Course
 from scheduler import generate_schedules, unschedulable_courses
@@ -115,6 +116,59 @@ def schedules():
         unschedulable=[n for n in unschedulable_courses(entries, include_closed, blocked)
                        if n not in online],
         online=online,
+    )
+
+
+@app.route("/api/requirements")
+def requirement_kinds():
+    return jsonify([{"kind": k, "label": v[0]} for k, v in suggest.REQUIREMENT_KINDS.items()])
+
+
+@app.route("/api/fill", methods=["POST"])
+def fill():
+    body  = request.get_json()
+    term  = body.get("term") or uw_api.default_term()
+    must  = body.get("courses", [])
+    specs = body.get("requirements", [])
+    prefs = {**DEFAULT_PREFS, **(body.get("prefs") or {})}
+
+    if not specs:
+        return jsonify(error="Add at least one requirement, or use your must-haves alone."), 400
+
+    result = suggest.fill(
+        term, must, specs, prefs,
+        blocked=parse_blocked(body.get("blocked")),
+        include_closed=bool(body.get("include_closed")),
+        target_credits=int(body.get("target_credits") or 0) or None,
+        interests=body.get("interests") or [],
+        priority=body.get("priority") or "balanced",
+        skip_prereqs=body.get("skip_prereqs", True),
+        standing=int(body.get("standing") or 0) or None,
+    )
+    if "error" in result:
+        return jsonify(error=result["error"]), 400
+
+    grades = dict(result["grades"])
+    grades.update(zip([c['name'] for c in must],
+                      pool.map(lambda c: madgrades.course_grades(c['subject'], c['catalog_number']), must)))
+
+    plans = [{
+        "score":    p["score"],
+        "notes":    p["notes"],
+        "credits":  p["credits"],
+        "picks":    p["picks"],
+        "sections": [serialize_section(c, grades.get(c.name)) for c in p["schedule"]],
+        "tight_walks": [{"day": d, "from": a.name, "to": b.name, "gap": gap, "walk": walk}
+                        for d, a, b, gap, walk in tight_walks(p["schedule"])],
+    } for p in result["plans"]]
+
+    return jsonify(
+        plans=plans,
+        alternatives=result["alternatives"],
+        covered=result["covered"],
+        unfilled=result["unfilled"],
+        checked=result["checked"],
+        fitting=result["fitting"],
     )
 
 
