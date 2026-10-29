@@ -172,11 +172,33 @@
         .busy-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 0; }
 
         /* DARS */
-        .dars { padding: 14px 0; border-bottom: 1px solid var(--hair); }
-        .dars-upload { display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
+        .dars { padding: 18px 0 20px; }
+        .dars-upload { position: relative; display: block; padding: 26px 24px 24px; background: var(--paper-2);
+                       border: 1.5px dashed #b9c0c4; border-top: 4px solid var(--red); cursor: pointer;
+                       transition: border-color 0.2s, background 0.2s; }
+        .dars-upload:hover, .dars-upload.over { border-color: var(--red); background: #fff; }
         .dars-upload input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-        .dars-upload:focus-within .link { outline: 2px solid var(--red); outline-offset: 2px; }
-        .dars-summary { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+        .dars-upload:focus-within { outline: 2px solid var(--red); outline-offset: 3px; }
+        .dars-kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); }
+        .dars-upload h3 { font-family: "Red Hat Display", sans-serif; font-size: 24px; font-weight: 800; line-height: 1.15;
+                          letter-spacing: -0.01em; margin: 6px 0 8px; }
+        .dars-upload p { font-size: 14px; color: var(--ink-2); margin: 0 0 16px; max-width: 46ch; }
+        .dars-upload ul { list-style: none; padding: 0; margin: 0 0 18px; display: grid; gap: 6px; font-size: 13px; }
+        .dars-upload li::before { content: "✓"; color: var(--red); font-weight: 700; margin-right: 8px; }
+        .dars-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+        .dars-button { display: inline-flex; gap: 10px; align-items: center; background: var(--red); color: #fff;
+                       font-weight: 700; font-size: 14px; padding: 11px 18px; transition: background 0.2s; }
+        .dars-upload:hover .dars-button { background: var(--red-dark); }
+        .dars-error { margin: 14px 0 0; color: var(--red); font-size: 13px; font-weight: 600; }
+        .dars-summary { background: var(--paper-2); border-top: 4px solid var(--red); padding: 18px 20px; }
+        .dars-summary-top { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+        .dars-summary h3 { font-family: "Red Hat Display", sans-serif; font-size: 20px; font-weight: 800; margin: 4px 0 14px; }
+        .dars-numbers { display: flex; gap: 28px; flex-wrap: wrap; }
+        .dars-numbers b { display: block; font-family: "Red Hat Display", sans-serif; font-size: 28px; font-weight: 800; line-height: 1; color: var(--red); }
+        .dars-numbers span { font-size: 12px; color: var(--ink-3); }
+        .or-hand { display: flex; align-items: center; gap: 12px; margin: 22px 0 4px; font-size: 11px; font-weight: 700;
+                   letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+        .or-hand::after { content: ""; flex: 1; height: 1px; background: var(--hair); }
         .dars-req { display: grid; grid-template-columns: auto 1fr auto; gap: 0 10px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--hair); font-size: 13px; cursor: pointer; }
         .dars-req input { accent-color: var(--red); }
         .dars-req .small { grid-column: 2 / -1; }
@@ -349,14 +371,9 @@
         <div class="left">
             <section class="section reveal">
                 <div class="section-head"><span class="num">01</span><h2>What you need</h2></div>
-                <div class="dars" id="dars">
-                    <label class="dars-upload">
-                        <input type="file" id="dars-file" accept="application/pdf,.pdf">
-                        <span class="link">Upload your DARS</span>
-                        <span class="small faint">PDF export. Read once to find what you have left, never stored on the server.</span>
-                    </label>
-                </div>
+                <div class="dars" id="dars"></div>
                 <div id="dars-reqs"></div>
+                <div class="or-hand" id="or-hand">Or add requirements by hand</div>
                 <div id="reqs"></div>
                 <div class="pref">
                     <label for="req-add">Requirement</label>
@@ -676,7 +693,7 @@ function readNeeds() {
 function renderReqs() {
     const box = $("#reqs");
     if (!state.reqs.length) {
-        box.innerHTML = state.dars ? "" : `<p class="status">Or add requirements by hand.</p>`;
+        box.innerHTML = "";
         return;
     }
     box.innerHTML = state.reqs.map((r, i) => `
@@ -727,10 +744,13 @@ $("#req-subject").addEventListener("keydown", (e) => { if (e.key === "Enter") ad
 
 // ── DARS ────────────────────────────────────────────────────
 
-async function onDarsFile(e) {
-    const file = e.target.files[0];
+function onDarsFile(e) {
+    readDars(e.target.files[0]);
+}
+
+async function readDars(file) {
     if (!file) return;
-    $("#dars").innerHTML = `<p class="status spin">Reading your DARS</p>`;
+    $("#dars").innerHTML = `<div class="dars-summary"><p class="status spin">Reading your DARS</p></div>`;
     const form = new FormData();
     form.append("file", file);
     let res;
@@ -761,30 +781,57 @@ async function onDarsFile(e) {
     save();
 }
 
-$("#dars-file").addEventListener("change", onDarsFile);
+renderDars();
 
 function renderDars(error) {
     const box = $("#dars");
     const d = state.dars;
     if (!d) {
         box.innerHTML = `
-            <label class="dars-upload">
+            <label class="dars-upload" id="dars-drop">
                 <input type="file" id="dars-file" accept="application/pdf,.pdf">
-                <span class="link">Upload your DARS</span>
-                <span class="small ${error ? "closed" : "faint"}">${error ? esc(error) : "PDF export. Read once to find what you have left, never stored on the server."}</span>
+                <span class="dars-kicker">Start here</span>
+                <h3>Upload your DARS and skip the searching.</h3>
+                <p>Run your degree audit, save it as a PDF, and drop it here. The planner reads what you've
+                   taken and what you still need, then picks classes that count.</p>
+                <ul>
+                    <li>Finds every requirement you have left</li>
+                    <li>Skips classes you've taken and checks prereqs</li>
+                    <li>Read once in memory, never saved on the server</li>
+                </ul>
+                <span class="dars-actions">
+                    <span class="dars-button">Choose PDF <span aria-hidden="true">→</span></span>
+                    <span class="small faint">or drag it onto this box</span>
+                </span>
+                ${error ? `<p class="dars-error">${esc(error)}</p>` : ""}
             </label>`;
         $("#dars-reqs").innerHTML = "";
-        // The input was re-created, so re-attach the upload handler
+        // The input was re-created, so re-attach the upload and drag-and-drop handlers
         box.querySelector("#dars-file").addEventListener("change", onDarsFile);
+        const drop = $("#dars-drop");
+        drop.addEventListener("dragover", ev => { ev.preventDefault(); drop.classList.add("over"); });
+        drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+        drop.addEventListener("drop", ev => {
+            ev.preventDefault();
+            drop.classList.remove("over");
+            readDars(ev.dataTransfer.files[0]);
+        });
         $("#pref-prereqs").disabled = false;
         $("#pref-prereqs").parentElement.lastChild.textContent = " Only suggest classes with no course prereqs";
         return;
     }
     box.innerHTML = `
         <div class="dars-summary">
-            <div><span class="code">${esc(d.program || "Your DARS")}</span>
-                 <div class="small muted">Year ${d.year || "?"} · ${d.taken.length} courses on record · ${d.requirements.length} requirements left</div></div>
-            <button class="link small" id="dars-clear">Remove</button>
+            <div class="dars-summary-top">
+                <span class="dars-kicker">Your DARS</span>
+                <button class="link small" id="dars-clear">Remove</button>
+            </div>
+            <h3>${esc(d.program || "Degree audit")}</h3>
+            <div class="dars-numbers">
+                <div><b>${d.year || "?"}</b><span>year</span></div>
+                <div><b>${d.taken.length}</b><span>courses on record</span></div>
+                <div><b>${d.requirements.length}</b><span>requirements left</span></div>
+            </div>
         </div>`;
     $("#dars-clear").addEventListener("click", () => {
         state.dars = null;
