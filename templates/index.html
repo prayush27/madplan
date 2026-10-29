@@ -216,7 +216,7 @@
     </div>
 
     <div class="hero">
-        <h1 id="hero-title">Plan your<br><em>semester.</em></h1>
+        <h1>Plan your<br><em>semester.</em></h1>
         <p>Find classes, see how they've been graded, and lay out a week that works. Seats are live from Course Search &amp; Enroll.</p>
     </div>
 
@@ -357,20 +357,12 @@ function load() {
 
 // ── Terms ───────────────────────────────────────────────────
 
-function setHero() {
-    const term = state.terms.find(t => t.code === state.term);
-    if (!term) return;
-    const [season, year] = term.name.split(" ");
-    $("#hero-title").innerHTML = `${esc(season)}<br><em>${esc(year)}.</em>`;
-}
-
 async function initTerms(saved) {
     const res = await fetch("/api/terms").then(r => r.json());
     state.terms = res.terms;
     state.term = res.terms.some(t => t.code === saved.term) ? saved.term : res.default;
     $("#term").innerHTML = res.terms.map(t =>
         `<option value="${t.code}" ${t.code === state.term ? "selected" : ""}>${esc(t.name)}</option>`).join("");
-    setHero();
 }
 
 $("#term").addEventListener("change", (e) => {
@@ -381,7 +373,6 @@ $("#term").addEventListener("change", (e) => {
     }
     state.term = e.target.value;
     state.mine = [];
-    setHero();
     renderMine();
     runSearch();
     save();
