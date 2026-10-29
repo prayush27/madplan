@@ -203,7 +203,8 @@
         .dars-req input { accent-color: var(--red); }
         .dars-req .small { grid-column: 2 / -1; }
         .dars-reqs-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-        .dars-reqs-head .link { flex: none; color: var(--ink-2); }
+        .dars-bulk { flex: none; font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+        .dars-reqs-head .link { color: var(--ink-2); }
         .dars-reqs-head .link:hover { color: var(--red); }
         .dars-group { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding: 14px 0 4px; }
 
@@ -899,7 +900,8 @@ function renderDars(error) {
     $("#dars-reqs").innerHTML = `
         <div class="dars-reqs-head">
             <p class="status">Tick what you want to work on this semester.</p>
-            <button class="link small" id="dars-untick">Clear all</button>
+            <span class="dars-bulk"><button class="link small" id="dars-tick">Select all</button> ·
+                <button class="link small" id="dars-untick">Clear all</button></span>
         </div>` + d.requirements.map((r, i) => {
         const head = r.group !== group ? `<div class="dars-group">${esc(r.group)}</div>` : "";
         group = r.group;
@@ -916,11 +918,13 @@ function renderDars(error) {
         d.requirements[+cb.dataset.darsI].on = cb.checked;
         save();
     }));
-    $("#dars-untick").addEventListener("click", () => {
-        d.requirements.forEach(r => r.on = false);
-        $("#dars-reqs").querySelectorAll("[data-dars-i]").forEach(cb => cb.checked = false);
+    const tickAll = (on) => {
+        d.requirements.forEach(r => r.on = on);
+        $("#dars-reqs").querySelectorAll("[data-dars-i]").forEach(cb => cb.checked = on);
         save();
-    });
+    };
+    $("#dars-tick").addEventListener("click", () => tickAll(true));
+    $("#dars-untick").addEventListener("click", () => tickAll(false));
 }
 
 // ── Search ──────────────────────────────────────────────────
