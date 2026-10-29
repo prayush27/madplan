@@ -21,6 +21,7 @@ BRANCH      = 8     # best candidates tried per requirement when combining
 MAX_SETS    = 40    # complete course combinations to collect before ranking
 CHECK_LIMIT = 800   # cap on fit checks so a hard request can't hang the server
 MAX_CREDITS = 18    # UW's normal per-term limit without a dean's approval
+MIX         = "MMMGG"   # when not everything fits: about 3 major classes for every 2 gen eds
 
 
 def _any(field, codes):
@@ -35,15 +36,15 @@ def _gen_ed(code):
     return [{"term": {"generalEd.code": code}}], lambda c: c['gen_ed_code'] == code
 
 
-# kind -> (label, filters, matcher). L&S counts Literature as Humanities, and
-# "N" (natural science) counts as either biological or physical.
+# kind -> (label, filters, matcher). L&S counts Literature as Humanities. "N" is general natural
+# science (most CS, math and stat): it counts toward Natural Science but not Biological or Physical.
 REQUIREMENT_KINDS = {
     "humanities": ("Humanities",         *_breadth("H", "L")),
     "literature": ("Literature",         *_breadth("L")),
     "social":     ("Social Science",     *_breadth("S")),
     "natural":    ("Natural Science",    *_breadth("B", "P", "N")),
-    "biological": ("Biological Science", *_breadth("B", "N")),
-    "physical":   ("Physical Science",   *_breadth("P", "N")),
+    "biological": ("Biological Science", *_breadth("B")),
+    "physical":   ("Physical Science",   *_breadth("P")),
     "ethnic":     ("Ethnic Studies", [{"term": {"ethnicStudies.code": "ETHNIC ST"}}],
                    lambda c: bool(c['ethnic_studies'])),
     "comm_a":     ("Communication A",    *_gen_ed("COM A")),
@@ -62,6 +63,7 @@ class Requirement:
         self.courses = courses   # explicit course names (DARS "SELECT FROM: MATH 320 OR 340 ...")
         self.count   = count     # how many courses it still needs
         self.group   = group     # a course counts once per group (e.g. once within the major)
+        self.major   = False     # major/program requirement, as opposed to a gen ed or breadth
 
 
 def build_requirement(term, spec):
@@ -76,6 +78,12 @@ def build_requirement(term, spec):
         req.label = spec.get("label") or req.label
         req.count = max(1, int(spec.get("count") or 1))
         req.group = spec.get("group")
+        req.major = (not re.search(r"general education|breadth", req.group, re.I) if req.group
+                     else spec.get("kind") in ("subject", "list"))
+        if spec.get("credits"):
+            # "Needs 3 credits" in one course means a 1-credit seminar won't do it
+            per_course, match = min(3, float(spec["credits"]) / req.count), req.match
+            req.match = lambda c: match(c) and c['min_credits'] >= per_course
     return req
 
 
@@ -344,21 +352,40 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
     search(0, [])
     if not sets and order:
         # Nothing covers everything at once — fill as many requirements as possible instead,
-        # in the order the student listed them, without going over the credit cap
-        best = []
-        for i in sorted(order):
-            hit_cap = False
+        # one class at a time, mixing major classes and gen eds (MIX) without going over the cap
+        best, hit_cap = [], set()
+
+        def done(i):
+            return allocate(reqs, [catalog[x] for x in best], only=covered_idx).get(i, 0) >= need[i]
+
+        def add_one(i):
             for n in candidates[i][:BRANCH + need[i]]:
-                if allocate(reqs, [catalog[x] for x in best], only=covered_idx).get(i, 0) >= need[i]:
-                    break
                 if n in best:
                     continue
                 if credits(best + [n]) > max_credits:
-                    hit_cap = True
+                    hit_cap.add(i)
                 elif feasible(best + [n]):
                     best.append(n)
-            if hit_cap and allocate(reqs, [catalog[x] for x in best], only=covered_idx).get(i, 0) < need[i]:
-                over_cap.append(reqs[i].label)
+                    return True
+            return False
+
+        # One slot per class still needed, in the order the requirements were listed
+        slots = {True: [], False: []}
+        for i in sorted(order):
+            slots[reqs[i].major] += [i] * need[i]
+        stuck, turn = set(), 0
+        while slots[True] or slots[False]:
+            kind = MIX[turn % len(MIX)] == "M"
+            turn += 1
+            queue = slots[kind] or slots[not kind]
+            i = queue.pop(0)
+            if i in stuck or done(i):
+                continue
+            if not add_one(i):
+                stuck.add(i)
+        have = allocate(reqs, [catalog[x] for x in best], only=covered_idx)
+        over_cap = [reqs[i].label + (f" ({have[i]} of {need[i]})" if have.get(i) else "")
+                    for i in sorted(order) if i in hit_cap and not done(i)]
         sets = [best]
 
     # 6. Top up to the credit target with the best remaining courses

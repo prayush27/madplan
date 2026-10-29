@@ -162,6 +162,7 @@ def parse(text):
                 "group": group,
                 "label": title,
                 "count": courses_needed(credits, count),
+                "credits": float(credits) if credits and not count else None,
                 "needs": f"{count} course{'s' if count and int(count) > 1 else ''}" if count
                          else f"{float(credits):g} credits" if credits else "",
                 **spec,
