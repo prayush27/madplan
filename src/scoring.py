@@ -83,6 +83,7 @@ def score_schedule(schedule, prefs=None):
     for day in prefs['days_off']:
         if day in day_map:
             score -= 12
+            notes.append(f"class on {day}")
         else:
             notes.append(f"{day} free")
 

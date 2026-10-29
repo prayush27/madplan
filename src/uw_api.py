@@ -7,6 +7,7 @@ import json
 import os
 import time
 import urllib.request
+from datetime import datetime, timezone
 
 from course import Course, CourseEntry
 
@@ -47,7 +48,8 @@ def _fetch(url, body=None, ttl=TTL_CATALOG):
             return json.load(f)
 
     data = json.dumps(body).encode() if body else None
-    req  = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+    req  = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json",
+                                                         "User-Agent": "madplan/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             result = json.load(resp)
@@ -66,12 +68,24 @@ def _fetch(url, body=None, ttl=TTL_CATALOG):
 # ── Terms + search ───────────────────────────────────────────
 
 def get_terms():
-    """Returns the terms currently open in Course Search & Enroll, e.g. [{'code': '1274', 'name': 'Spring 2027'}]."""
+    """
+    Returns the terms currently open in Course Search & Enroll, e.g.
+    [{'code': '1274', 'name': 'Spring 2027', 'start': '2027-01-19', 'end': '2027-05-07'}]
+    """
+    def to_date(ms):
+        # Dates are midnight in Madison, so shift by 6h before taking the UTC date
+        return datetime.fromtimestamp(ms / 1000 + 6 * 3600, tz=timezone.utc).date().isoformat()
+
     data = _fetch(f"{BASE_URL}/aggregate")
     terms = []
     for t in data['terms']:
         season, year = t['longDescription'].split()[0], t['shortDescription'].split()[0]
-        terms.append({"code": t['termCode'], "name": f"{season} {year}"})
+        terms.append({
+            "code":  t['termCode'],
+            "name":  f"{season} {year}",
+            "start": to_date(t['instructionBeginDate']),
+            "end":   to_date(t['instructionEndDate']),
+        })
     return terms
 
 

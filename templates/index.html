@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Smart Academic Planner</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MadPlan</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -14,23 +16,19 @@
             --accent: #38bdf8;
             --accent2: #818cf8;
             --text: #e2e8f0;
-            --muted: #4b5563;
+            --muted: #64748b;
             --soft: #94a3b8;
             --danger: #f87171;
+            --warn: #fbbf24;
             --success: #34d399;
         }
 
         body {
             font-family: 'DM Mono', monospace;
+            font-size: 13px;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-            padding: 48px 20px;
-            position: relative;
-            overflow-x: hidden;
         }
 
         body::before {
@@ -41,807 +39,756 @@
                 linear-gradient(var(--border) 1px, transparent 1px),
                 linear-gradient(90deg, var(--border) 1px, transparent 1px);
             background-size: 48px 48px;
-            opacity: 0.25;
+            opacity: 0.2;
             pointer-events: none;
+            z-index: -1;
         }
 
-        .orb1 {
-            position: fixed;
-            top: -180px; left: -180px;
-            width: 500px; height: 500px;
-            background: radial-gradient(circle, rgba(56,189,248,0.1) 0%, transparent 70%);
-            pointer-events: none; z-index: 0;
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(8, 11, 18, 0.85);
         }
 
-        .orb2 {
-            position: fixed;
-            bottom: -180px; right: -180px;
-            width: 500px; height: 500px;
-            background: radial-gradient(circle, rgba(129,140,248,0.1) 0%, transparent 70%);
-            pointer-events: none; z-index: 0;
-        }
-
-        .container {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 44px;
-            width: 100%;
-            max-width: 640px;
-            position: relative;
-            z-index: 1;
-            overflow: hidden;
-        }
-
-        .container::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, var(--accent), var(--accent2));
-        }
-
-        .tag {
-            font-size: 11px;
-            color: var(--accent);
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-            opacity: 0.8;
-        }
-
-        .header h1 {
+        h1 {
             font-family: 'Syne', sans-serif;
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 800;
-            color: #fff;
-            letter-spacing: -0.5px;
-            margin-bottom: 8px;
+            letter-spacing: -0.02em;
         }
+        h1 span { color: var(--accent); }
 
-        .header p {
-            color: var(--soft);
-            font-size: 13px;
-            line-height: 1.6;
-            margin-bottom: 32px;
-        }
-
-        .section-label {
-            font-size: 11px;
-            color: var(--muted);
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
+        h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
             margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
         }
+        h2 small { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--soft); font-weight: 400; }
 
-        .course-grid {
+        main {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
+            grid-template-columns: minmax(320px, 420px) 1fr;
+            gap: 20px;
+            padding: 20px 24px 48px;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+        @media (max-width: 900px) {
+            main { grid-template-columns: 1fr; padding: 16px; }
+            header { padding: 14px 16px; }
         }
 
-        .course-card {
-            background: var(--surface);
+        .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+        .card {
+            background: var(--card);
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 16px;
-            transition: all 0.2s;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            position: relative;
-            cursor: pointer;
-            user-select: none;
         }
 
-        .course-card:hover { border-color: rgba(56,189,248,0.4); }
-
-        .card-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-
-        .checkmark {
-            width: 18px; height: 18px;
-            border-radius: 5px;
-            border: 1px solid var(--muted);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            color: transparent;
-            transition: all 0.2s;
-        }
-
-        .course-title {
-            font-size: 13px;
-            color: #fff;
-            font-weight: 600;
-        }
-
-        .course-meta {
-            font-size: 10px;
-            color: var(--muted);
-            line-height: 1.6;
-        }
-
-        .has-disc-badge {
-            display: inline-block;
-            font-size: 9px;
-            color: var(--accent2);
-            border: 1px solid rgba(129,140,248,0.3);
-            padding: 1px 6px;
-            border-radius: 4px;
-            margin-bottom: 4px;
-        }
-
-        .lecture-pill {
-            display: inline-block;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            padding: 2px 6px;
-            font-size: 9px;
-            color: var(--soft);
-            margin: 2px 2px 0 0;
-        }
-
-        .disc-pill {
-            display: inline-block;
-            background: var(--card);
-            border: 1px solid rgba(129,140,248,0.2);
-            border-radius: 4px;
-            padding: 2px 6px;
-            font-size: 9px;
-            color: var(--accent2);
-            margin: 2px 2px 0 0;
-        }
-
-        .delete-btn {
-            background: none;
-            border: none;
-            color: var(--muted);
-            cursor: pointer;
-            font-size: 13px;
-            padding: 2px 4px;
-            transition: color 0.2s;
-        }
-
-        .delete-btn:hover { color: var(--danger); }
-
-        .empty-state {
-            font-size: 12px;
-            color: var(--muted);
-            text-align: center;
-            padding: 20px;
-            border: 1px dashed var(--border);
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .divider {
-            height: 1px;
-            background: var(--border);
-            margin: 24px 0;
-        }
-
-        .selected-count {
-            font-size: 11px;
-            color: var(--muted);
-            text-align: center;
-            margin-bottom: 8px;
-        }
-
-        .generate-btn {
+        input[type=text], select {
             width: 100%;
-            padding: 14px;
-            background: var(--accent);
-            color: #080b12;
-            border: none;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 700;
-            font-family: 'DM Mono', monospace;
-            letter-spacing: 0.05em;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .generate-btn:hover { opacity: 0.85; }
-
-        .error {
-            color: var(--danger);
-            font-size: 12px;
-            margin-bottom: 14px;
-        }
-
-        /* Add course form */
-        .add-form-title {
-            font-family: 'Syne', sans-serif;
-            font-size: 16px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 16px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .form-group { display: flex; flex-direction: column; gap: 6px; }
-
-        .form-label {
-            font-size: 11px;
-            color: var(--muted);
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-
-        .form-input {
             background: var(--surface);
             border: 1px solid var(--border);
+            color: var(--text);
             border-radius: 8px;
             padding: 10px 12px;
+            font: inherit;
+        }
+        input[type=text]:focus, select:focus { outline: none; border-color: var(--accent); }
+        header select { width: auto; }
+
+        button {
+            font: inherit;
+            cursor: pointer;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface);
             color: var(--text);
-            font-family: 'DM Mono', monospace;
-            font-size: 13px;
-            outline: none;
-            width: 100%;
-            transition: border-color 0.2s;
+            padding: 7px 12px;
         }
-
-        .form-input:focus { border-color: var(--accent); }
-
-        input[type="time"]::-webkit-calendar-picker-indicator {
-            filter: invert(0.5);
-            cursor: pointer;
-        }
-
-        /* Toggle switch for has_discussion */
-        .toggle-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding: 12px 16px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-        }
-
-        .toggle-label {
-            font-size: 13px;
-            color: var(--soft);
-            flex: 1;
-        }
-
-        .toggle-switch {
-            position: relative;
-            width: 40px;
-            height: 22px;
-            flex-shrink: 0;
-        }
-
-        .toggle-switch input { display: none; }
-
-        .toggle-track {
-            position: absolute;
-            inset: 0;
-            background: var(--border);
-            border-radius: 20px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .toggle-track::after {
-            content: '';
-            position: absolute;
-            top: 3px; left: 3px;
-            width: 16px; height: 16px;
-            background: var(--soft);
-            border-radius: 50%;
-            transition: transform 0.2s, background 0.2s;
-        }
-
-        .toggle-switch input:checked + .toggle-track {
-            background: rgba(56,189,248,0.3);
-        }
-
-        .toggle-switch input:checked + .toggle-track::after {
-            transform: translateX(18px);
+        button:hover { border-color: var(--accent); }
+        button.primary {
             background: var(--accent);
-        }
-
-        /* Lecture blocks */
-        .lectures-container {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            margin-bottom: 12px;
-        }
-
-        .lecture-block {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 16px;
-        }
-
-        .lecture-block-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .lecture-block-title {
-            font-size: 12px;
-            color: var(--accent);
-            font-weight: 600;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-        }
-
-        .remove-btn {
-            background: none;
+            color: #04121c;
             border: none;
-            color: var(--muted);
-            cursor: pointer;
-            font-size: 12px;
-            font-family: 'DM Mono', monospace;
-            transition: color 0.2s;
+            font-weight: 500;
+            padding: 12px;
+            width: 100%;
+            font-size: 14px;
         }
+        button.primary:disabled { opacity: 0.5; cursor: wait; }
+        button.small { padding: 4px 9px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+        button.danger:hover { border-color: var(--danger); color: var(--danger); }
 
-        .remove-btn:hover { color: var(--danger); }
+        .muted { color: var(--soft); }
+        .tiny { font-size: 11px; }
+        .hint { color: var(--muted); font-size: 12px; padding: 8px 0; }
 
-        .time-row {
-            display: grid;
-            grid-template-columns: auto 1fr 1fr;
-            gap: 10px;
-            align-items: end;
-            margin-bottom: 10px;
-        }
-
-        .days-group {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-
-        .day-pill {
-            background: var(--card);
+        /* Search results */
+        #results { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow-y: auto; }
+        .result {
             border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 5px 9px;
-            font-size: 11px;
-            color: var(--soft);
-            cursor: pointer;
-            transition: all 0.2s;
-            user-select: none;
-        }
-
-        .day-pill.active {
-            background: rgba(56,189,248,0.1);
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        /* Discussion blocks */
-        .discussions-wrapper {
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid var(--border);
-            display: none;
-        }
-
-        .discussions-wrapper.visible { display: block; }
-
-        .discussions-title {
-            font-size: 10px;
-            color: var(--accent2);
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-        }
-
-        .disc-blocks-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .disc-block {
-            background: var(--card);
-            border: 1px solid rgba(129,140,248,0.2);
-            border-radius: 8px;
-            padding: 12px;
-        }
-
-        .disc-block-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .disc-block-title {
-            font-size: 11px;
-            color: var(--accent2);
-            font-weight: 600;
-        }
-
-        .day-pill.disc-active {
-            background: rgba(129,140,248,0.1);
-            border-color: var(--accent2);
-            color: var(--accent2);
-        }
-
-        .add-disc-btn {
-            width: 100%;
-            padding: 7px;
-            background: transparent;
-            color: var(--accent2);
-            border: 1px dashed rgba(129,140,248,0.3);
-            border-radius: 6px;
-            font-size: 11px;
-            font-family: 'DM Mono', monospace;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 8px;
-        }
-
-        .add-disc-btn:hover {
-            background: rgba(129,140,248,0.05);
-            border-color: var(--accent2);
-        }
-
-        .add-lecture-btn {
-            width: 100%;
-            padding: 10px;
-            background: transparent;
-            color: var(--accent);
-            border: 1px dashed rgba(56,189,248,0.3);
-            border-radius: 8px;
-            font-size: 12px;
-            font-family: 'DM Mono', monospace;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-bottom: 16px;
-        }
-
-        .add-lecture-btn:hover {
-            background: rgba(56,189,248,0.05);
-            border-color: var(--accent);
-        }
-
-        .add-course-btn {
-            width: 100%;
-            padding: 12px;
-            background: rgba(56,189,248,0.08);
-            color: var(--accent);
-            border: 1px solid rgba(56,189,248,0.25);
             border-radius: 10px;
-            font-size: 13px;
-            font-weight: 700;
-            font-family: 'DM Mono', monospace;
-            letter-spacing: 0.05em;
-            cursor: pointer;
-            transition: all 0.2s;
+            padding: 12px;
+            background: var(--surface);
         }
+        .result-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+        .result-name { font-weight: 500; }
+        .result-title { color: var(--soft); }
+        .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+        .tag {
+            font-size: 11px;
+            padding: 2px 7px;
+            border-radius: 99px;
+            border: 1px solid var(--border);
+            color: var(--soft);
+        }
+        .gpa { font-weight: 500; border-color: currentColor; }
+        .gpa.easy { color: var(--success); }
+        .gpa.mid  { color: var(--warn); }
+        .gpa.hard { color: var(--danger); }
+        details { margin-top: 8px; color: var(--soft); font-size: 12px; line-height: 1.5; }
+        summary { cursor: pointer; color: var(--muted); }
+        details p { margin-top: 6px; }
 
-        .add-course-btn:hover {
-            background: rgba(56,189,248,0.15);
-            border-color: var(--accent);
+        /* My courses */
+        .mine { display: flex; flex-direction: column; gap: 6px; }
+        .mine-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 10px; border-radius: 8px; background: var(--surface);
         }
+        .swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+        .mine-row .grow { flex: 1; min-width: 0; }
+        .mine-row .grow div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Preferences */
+        .prefs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .prefs label.field { display: flex; flex-direction: column; gap: 5px; color: var(--soft); font-size: 12px; }
+        .full { grid-column: 1 / -1; }
+        .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .chip input { display: none; }
+        .chip span {
+            display: inline-block; padding: 6px 11px; border-radius: 99px;
+            border: 1px solid var(--border); cursor: pointer; color: var(--soft);
+        }
+        .chip input:checked + span { border-color: var(--accent); color: var(--accent); background: rgba(56,189,248,0.08); }
+        .check { display: flex; align-items: center; gap: 8px; color: var(--soft); cursor: pointer; }
+        .busy-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+        .busy-row select { width: auto; padding: 6px 8px; }
+
+        /* Plans */
+        .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+        .tab {
+            flex: 1; min-width: 140px; text-align: left; padding: 10px 12px;
+        }
+        .tab.active { border-color: var(--accent); background: rgba(56,189,248,0.08); }
+        .tab .score { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+        .notes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+        .alert {
+            padding: 10px 12px; border-radius: 8px; margin-bottom: 12px;
+            border: 1px solid rgba(251,191,36,0.4); color: var(--warn); background: rgba(251,191,36,0.06);
+        }
+        .alert.bad { border-color: rgba(248,113,113,0.4); color: var(--danger); background: rgba(248,113,113,0.06); }
+
+        /* Calendar */
+        .calendar { display: grid; grid-template-columns: 44px repeat(5, 1fr); position: relative; overflow-x: auto; }
+        .cal-head { text-align: center; color: var(--soft); padding-bottom: 6px; font-size: 12px; }
+        .cal-times { position: relative; }
+        .cal-time { position: absolute; right: 6px; font-size: 10px; color: var(--muted); transform: translateY(-50%); }
+        .cal-day { position: relative; border-left: 1px solid var(--border); min-width: 70px; }
+        .cal-line { position: absolute; left: 0; right: 0; border-top: 1px solid var(--border); opacity: 0.5; }
+        .block {
+            position: absolute; left: 3px; right: 3px; border-radius: 6px;
+            padding: 3px 5px; font-size: 10.5px; line-height: 1.25; overflow: hidden;
+            color: #04121c;
+        }
+        .block b { font-weight: 500; display: block; }
+        .block.discussion, .block.lab, .block.seminar { opacity: 0.8; border: 1px dashed rgba(0,0,0,0.4); }
+        .block.busy { background: repeating-linear-gradient(45deg, #1e2a40, #1e2a40 6px, #111827 6px, #111827 12px); color: var(--soft); }
+
+        /* Section table */
+        .table-wrap { overflow-x: auto; margin-top: 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { text-align: left; color: var(--muted); font-weight: 400; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        td { padding: 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+        .status-OPEN { color: var(--success); }
+        .status-WAITLISTED { color: var(--warn); }
+        .status-CLOSED { color: var(--danger); }
+        .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+
+        .empty { text-align: center; padding: 48px 16px; color: var(--soft); line-height: 1.7; }
+        .empty b { font-family: 'Syne', sans-serif; font-size: 18px; color: var(--text); display: block; margin-bottom: 6px; }
+        .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -2px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <div class="orb1"></div>
-    <div class="orb2"></div>
+<header>
+    <h1>UW <span>Schedules</span></h1>
+    <select id="term" aria-label="Term"></select>
+</header>
 
-    <div class="container">
-        <div class="tag">// academic planner v1</div>
-        <div class="header">
-            <h1>Build Your Schedule</h1>
-            <p>Add your courses with all their sections and discussions. We'll find every valid conflict-free combination — ranked for you.</p>
-        </div>
-
-        <!-- GENERATE FORM -->
-        <form action="/generate" method="POST" id="generateForm">
-            {% if error %}
-            <p class="error">⚠ {{ error }}</p>
+<main>
+    <div class="col">
+        <section class="card">
+            <h2>Find courses <small>search by name, number or topic</small></h2>
+            <input type="text" id="search" placeholder="e.g. COMP SCI 400, psychology, ECON 101" autocomplete="off">
+            {% if not grades_enabled %}
+            <p class="hint">Grade stats are off — add MADGRADES_TOKEN to .env to turn them on.</p>
             {% endif %}
+            <div id="results"></div>
+        </section>
 
-            <div class="section-label">Your Courses</div>
+        <section class="card">
+            <h2>My courses <small id="credit-total"></small></h2>
+            <div class="mine" id="mine"></div>
+        </section>
 
-            {% if user_courses %}
-            <div class="course-grid">
-                {% for course in user_courses %}
-                <div class="course-card" onclick="toggleCard(this, '{{ course.name }}')">
-                    <div class="card-top">
-                        <span class="course-title">{{ course.name }}</span>
-                        <div style="display:flex; gap:8px; align-items:center;">
-                            <div class="checkmark">✓</div>
-                            <button type="button" class="delete-btn"
-                                    onclick="deleteCourse(event, '{{ loop.index0 }}')">✕</button>
-                        </div>
-                    </div>
-                    <div class="course-meta">{{ course.credits }} credits</div>
-
-                    {% if course.has_discussion %}
-                    <span class="has-disc-badge">Lecture + Discussion</span>
-                    {% endif %}
-
-                    <div>
-                        {% for lg in course.lecture_groups %}
-                        <span class="lecture-pill">
-                            LEC {{ lg.lecture.section }} · {{ lg.lecture.days | join("/") }}
-                        </span>
-                        {% if course.has_discussion %}
-                            {% for d in lg.discussions %}
-                            <span class="disc-pill">
-                                DIS {{ d.section }}
-                            </span>
-                            {% endfor %}
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="empty-state">No courses yet — add one below ↓</div>
-            {% endif %}
-
-            <div id="hiddenCheckboxes"></div>
-            <p class="selected-count" id="count-label">0 courses selected</p>
-            <button type="submit" class="generate-btn">Generate Schedules →</button>
-        </form>
-
-        <!-- Hidden delete forms -->
-        <div style="display:none;">
-            {% for course in user_courses %}
-            <form id="deleteForm{{ loop.index0 }}"
-                  action="/delete_course/{{ loop.index0 }}"
-                  method="POST"></form>
-            {% endfor %}
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- ADD COURSE FORM -->
-        <div class="add-form-title">+ Add a Course</div>
-        <form action="/add_course" method="POST" id="addCourseForm">
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Course Name</label>
-                    <input type="text" name="name" class="form-input"
-                           placeholder="e.g. Calculus I" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Credits</label>
-                    <input type="number" name="credits" class="form-input"
-                           value="3" min="1" max="6">
-                </div>
-            </div>
-
-            <!-- Discussion toggle -->
-            <div class="toggle-row">
-                <span class="toggle-label">This course has discussion sections</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="hasDiscToggle"
-                           name="has_discussion" value="yes"
-                           onchange="toggleDiscussions(this.checked)">
-                    <div class="toggle-track"></div>
+        <section class="card">
+            <h2>Preferences</h2>
+            <div class="prefs">
+                <label class="field">Start no earlier than
+                    <select id="pref-start"></select>
                 </label>
+                <label class="field">End no later than
+                    <select id="pref-end"></select>
+                </label>
+                <div class="field full">
+                    <label class="field">Days I'd like off</label>
+                    <div class="chips" id="pref-days"></div>
+                </div>
+                <div class="field full">
+                    <label class="field">Spacing</label>
+                    <div class="chips" id="pref-spacing">
+                        <label class="chip"><input type="radio" name="spacing" value="compact"><span>Compact</span></label>
+                        <label class="chip"><input type="radio" name="spacing" value="balanced" checked><span>Balanced</span></label>
+                        <label class="chip"><input type="radio" name="spacing" value="spread"><span>Breathing room</span></label>
+                    </div>
+                </div>
+                <label class="check full"><input type="checkbox" id="pref-waitlist" checked> Avoid waitlisted sections</label>
+                <label class="check full"><input type="checkbox" id="pref-closed"> Include full sections</label>
+                <div class="full">
+                    <label class="field">Busy times <span class="tiny muted">(work, practice, ...)</span></label>
+                    <div id="busy"></div>
+                    <button class="small" id="add-busy" style="margin-top:8px">+ Add busy time</button>
+                </div>
             </div>
+        </section>
 
-            <!-- Lecture sections -->
-            <div class="section-label">Lecture Sections</div>
-            <div class="lectures-container" id="lecturesContainer"></div>
-            <button type="button" class="add-lecture-btn" onclick="addLecture()">
-                + Add Another Lecture Section
-            </button>
-
-            <button type="submit" class="add-course-btn">Add Course →</button>
-        </form>
+        <button class="primary" id="generate">Build my schedule</button>
     </div>
 
-    <script>
-        // ── Course selection ──────────────────────────────────────
-        const selectedCourses = new Set();
+    <div class="col">
+        <section class="card" id="output">
+            <div class="empty">
+                <b>No schedule yet</b>
+                Search for courses, add them, set your preferences,<br>then hit “Build my schedule”.
+            </div>
+        </section>
+    </div>
+</main>
 
-        function toggleCard(card, courseName) {
-            const checkmark = card.querySelector('.checkmark');
-            if (selectedCourses.has(courseName)) {
-                selectedCourses.delete(courseName);
-                card.style.borderColor = 'var(--border)';
-                card.style.background  = 'var(--surface)';
-                checkmark.style.background  = 'transparent';
-                checkmark.style.borderColor = 'var(--muted)';
-                checkmark.style.color       = 'transparent';
-            } else {
-                selectedCourses.add(courseName);
-                card.style.borderColor = 'rgba(56,189,248,0.6)';
-                card.style.background  = 'rgba(56,189,248,0.05)';
-                checkmark.style.background  = 'var(--accent)';
-                checkmark.style.borderColor = 'var(--accent)';
-                checkmark.style.color       = '#080b12';
-            }
-            const container = document.getElementById('hiddenCheckboxes');
-            container.innerHTML = '';
-            selectedCourses.forEach(name => {
-                const input = document.createElement('input');
-                input.type  = 'hidden';
-                input.name  = 'courses';
-                input.value = name;
-                container.appendChild(input);
-            });
-            const count = selectedCourses.size;
-            const label = document.getElementById('count-label');
-            label.textContent = `${count} course${count !== 1 ? 's' : ''} selected`;
-            label.style.color = count > 0 ? 'var(--accent)' : 'var(--muted)';
-        }
+<script>
+const DAYS     = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+const COLORS   = ["#38bdf8", "#a78bfa", "#34d399", "#fbbf24", "#f472b6", "#fb923c", "#2dd4bf", "#c084fc"];
+const ICS_DAYS = { Mon: "MO", Tue: "TU", Wed: "WE", Thu: "TH", Fri: "FR", Sat: "SA", Sun: "SU" };
 
-        function deleteCourse(event, index) {
-            event.stopPropagation();
-            document.getElementById('deleteForm' + index).submit();
-        }
+const state = {
+    term: null,
+    terms: [],
+    mine: [],      // course summaries the student added
+    busy: [],      // [{days: [...], start: 1200, end: 1300}]
+    plans: [],
+    activePlan: 0,
+    lastResult: null,
+};
 
-        // ── Discussion toggle ─────────────────────────────────────
-        let hasDiscussion = false;
+// ── Helpers ─────────────────────────────────────────────────
 
-        function toggleDiscussions(enabled) {
-            hasDiscussion = enabled;
-            // Show/hide all discussion wrappers
-            document.querySelectorAll('.discussions-wrapper').forEach(w => {
-                w.classList.toggle('visible', enabled);
-            });
-        }
+const $ = (sel) => document.querySelector(sel);
 
-        // ── Days pill toggle ──────────────────────────────────────
-        function toggleDay(pill, isDisc = false) {
-            pill.classList.toggle('active');
-            if (isDisc) pill.classList.toggle('disc-active');
-            const cb = pill.querySelector('input[type="checkbox"]');
-            cb.checked = !cb.checked;
-        }
+function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
 
-        // ── Lecture builder ───────────────────────────────────────
-        const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-        let lectureCount = 0;
+function fmtTime(t) {
+    let h = Math.floor(t / 100), m = t % 100;
+    const ampm = h < 12 ? "am" : "pm";
+    h = h % 12 || 12;
+    return m ? `${h}:${String(m).padStart(2, "0")}${ampm}` : `${h}${ampm}`;
+}
 
-        function addLecture() {
-            const li = lectureCount++;
+const toMin = (t) => Math.floor(t / 100) * 60 + t % 100;
 
-            const block = document.createElement('div');
-            block.className = 'lecture-block';
-            block.innerHTML = `
-                <div class="lecture-block-header">
-                    <span class="lecture-block-title">Lecture ${li + 1}</span>
-                    ${li > 0
-                        ? `<button type="button" class="remove-btn"
-                               onclick="this.closest('.lecture-block').remove()">✕ Remove</button>`
-                        : ''}
+function gpaClass(gpa) {
+    return gpa >= 3.5 ? "easy" : gpa >= 3.0 ? "mid" : "hard";
+}
+
+function gpaTag(stats, label = "avg GPA") {
+    if (!stats) return "";
+    return `<span class="tag gpa ${gpaClass(stats.gpa)}" title="${stats.graded.toLocaleString()} grades">${stats.gpa.toFixed(2)} ${label} · ${stats.pct_a}% A</span>`;
+}
+
+function colorFor(name) {
+    const i = state.mine.findIndex(c => c.name === name);
+    return COLORS[(i < 0 ? 0 : i) % COLORS.length];
+}
+
+function save() {
+    try {
+        localStorage.setItem("madplan", JSON.stringify({
+            term: state.term, mine: state.mine, busy: state.busy, prefs: readPrefs(),
+        }));
+    } catch (e) { /* storage unavailable — fine, just won't persist */ }
+}
+
+function load() {
+    try { return JSON.parse(localStorage.getItem("madplan")) || {}; }
+    catch (e) { return {}; }
+}
+
+// ── Terms ───────────────────────────────────────────────────
+
+async function initTerms(saved) {
+    const res = await fetch("/api/terms").then(r => r.json());
+    state.terms = res.terms;
+    state.term = res.terms.some(t => t.code === saved.term) ? saved.term : res.default;
+    $("#term").innerHTML = res.terms.map(t =>
+        `<option value="${t.code}" ${t.code === state.term ? "selected" : ""}>${esc(t.name)}</option>`).join("");
+}
+
+$("#term").addEventListener("change", (e) => {
+    state.term = e.target.value;
+    // Course ids are per term, so the old list may not apply
+    if (state.mine.length && !confirm("Switching terms clears your course list. Continue?")) {
+        e.target.value = state.mine[0].term;
+        state.term = e.target.value;
+        return;
+    }
+    state.mine = [];
+    renderMine();
+    runSearch();
+    save();
+});
+
+// ── Search ──────────────────────────────────────────────────
+
+let searchTimer, searchSeq = 0;
+
+$("#search").addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(runSearch, 350);
+});
+
+async function runSearch() {
+    const q = $("#search").value.trim();
+    const box = $("#results");
+    if (!q) { box.innerHTML = ""; return; }
+
+    const seq = ++searchSeq;
+    box.innerHTML = `<p class="hint"><span class="spinner"></span> Searching…</p>`;
+    let res;
+    try {
+        res = await fetch(`/api/search?term=${state.term}&q=${encodeURIComponent(q)}`).then(r => r.json());
+    } catch (e) {
+        if (seq === searchSeq) box.innerHTML = `<p class="hint">Search failed — is the UW API reachable?</p>`;
+        return;
+    }
+    if (seq !== searchSeq) return;   // a newer search already started
+
+    if (!res.courses.length) {
+        box.innerHTML = `<p class="hint">No courses found for “${esc(q)}”.</p>`;
+        return;
+    }
+    box.innerHTML = `<p class="hint">${res.found.toLocaleString()} result${res.found === 1 ? "" : "s"}${res.found > 20 ? " — showing top 20" : ""}</p>` +
+        res.courses.map(courseCard).join("");
+    box.querySelectorAll("[data-add]").forEach(btn => btn.addEventListener("click", () => {
+        addCourse(res.courses[+btn.dataset.add]);
+        btn.textContent = "Added";
+        btn.disabled = true;
+    }));
+}
+
+function courseCard(c, i) {
+    const added = state.mine.some(m => m.name === c.name);
+    const g = c.grades && (c.grades.recent || c.grades.overall);
+    const tags = [
+        gpaTag(g),
+        `<span class="tag">${esc(c.credits)} cr</span>`,
+        ...c.breadths.map(b => `<span class="tag">${esc(b)}</span>`),
+        c.gen_ed ? `<span class="tag">${esc(c.gen_ed)}</span>` : "",
+        c.ethnic_studies ? `<span class="tag">Ethnic Studies</span>` : "",
+        ...c.levels.map(l => `<span class="tag">${esc(l)}</span>`),
+    ].join("");
+    return `
+        <div class="result">
+            <div class="result-top">
+                <div>
+                    <div class="result-name">${esc(c.name)}</div>
+                    <div class="result-title">${esc(c.title)}</div>
                 </div>
+                <button class="small" data-add="${i}" ${added ? "disabled" : ""}>${added ? "Added" : "+ Add"}</button>
+            </div>
+            <div class="tags">${tags}</div>
+            <details>
+                <summary>Details</summary>
+                <p>${esc(c.description)}</p>
+                ${c.prerequisites ? `<p><b>Prereqs:</b> ${esc(c.prerequisites)}</p>` : ""}
+                ${c.typically_offered ? `<p><b>Typically offered:</b> ${esc(c.typically_offered)}</p>` : ""}
+            </details>
+        </div>`;
+}
 
-                <input type="hidden" name="lecture_section" value="">
-                <div class="form-group" style="margin-bottom:10px;">
-                    <label class="form-label">Section Number</label>
-                    <input type="text" class="form-input" placeholder="e.g. 001"
-                           oninput="this.previousElementSibling.previousElementSibling.value = this.value"
-                           style="margin-top:0;">
+// ── My courses ──────────────────────────────────────────────
+
+function addCourse(c) {
+    if (state.mine.some(m => m.name === c.name)) return;
+    state.mine.push({ ...c, term: state.term });
+    renderMine();
+    save();
+}
+
+function renderMine() {
+    const box = $("#mine");
+    if (!state.mine.length) {
+        box.innerHTML = `<p class="hint">Nothing added yet.</p>`;
+        $("#credit-total").textContent = "";
+        return;
+    }
+    const credits = state.mine.reduce((sum, c) => sum + (c.min_credits || 0), 0);
+    $("#credit-total").innerHTML = `${credits} credits${credits > 18 ? ` <span style="color:var(--danger)">· over 18</span>` : ""}`;
+    box.innerHTML = state.mine.map((c, i) => {
+        const g = c.grades && (c.grades.recent || c.grades.overall);
+        return `
+            <div class="mine-row">
+                <span class="swatch" style="background:${COLORS[i % COLORS.length]}"></span>
+                <div class="grow">
+                    <div>${esc(c.name)} <span class="muted">· ${esc(c.credits)} cr</span></div>
+                    <div class="tiny muted">${esc(c.title)}</div>
                 </div>
+                ${g ? `<span class="tag gpa ${gpaClass(g.gpa)}">${g.gpa.toFixed(2)}</span>` : ""}
+                <button class="small danger" data-remove="${i}" aria-label="Remove">✕</button>
+            </div>`;
+    }).join("");
+    box.querySelectorAll("[data-remove]").forEach(btn => btn.addEventListener("click", () => {
+        state.mine.splice(+btn.dataset.remove, 1);
+        renderMine();
+        save();
+    }));
+}
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-                    <div class="form-group">
-                        <label class="form-label">Start Time</label>
-                        <input type="time" name="lecture_start" class="form-input" value="09:00" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">End Time</label>
-                        <input type="time" name="lecture_end" class="form-input" value="10:00" required>
-                    </div>
-                </div>
+// ── Preferences ─────────────────────────────────────────────
 
-                <div class="form-label" style="margin-bottom:6px;">Meeting Days</div>
-                <div class="days-group" style="margin-bottom:0;">
-                    ${DAYS.map(day => `
-                        <div class="day-pill" onclick="toggleDay(this)">
-                            ${day}
-                            <input type="checkbox" name="lecture_days_${li}"
-                                   value="${day}" style="display:none;">
-                        </div>
-                    `).join('')}
-                </div>
+function timeOptions(from, to, step = 30) {
+    const opts = [];
+    for (let m = toMin(from); m <= toMin(to); m += step) {
+        const t = Math.floor(m / 60) * 100 + m % 60;
+        opts.push(`<option value="${t}">${fmtTime(t)}</option>`);
+    }
+    return opts.join("");
+}
 
-                <!-- Discussions for this lecture -->
-                <div class="discussions-wrapper ${hasDiscussion ? 'visible' : ''}">
-                    <div class="discussions-title">Discussion Sections for this Lecture</div>
-                    <div class="disc-blocks-container" id="discContainer_${li}"></div>
-                    <button type="button" class="add-disc-btn"
-                            onclick="addDiscussion(${li})">+ Add Discussion Section</button>
-                </div>
-            `;
+function initPrefs(saved) {
+    const p = saved.prefs || {};
+    $("#pref-start").innerHTML = timeOptions(700, 1200);
+    $("#pref-end").innerHTML = timeOptions(1400, 2100);
+    $("#pref-start").value = p.earliest_start || 900;
+    $("#pref-end").value = p.latest_end || 1700;
+    $("#pref-days").innerHTML = DAYS.map(d =>
+        `<label class="chip"><input type="checkbox" value="${d}" ${(p.days_off || []).includes(d) ? "checked" : ""}><span>${d}</span></label>`).join("");
+    if (p.spacing) document.querySelector(`input[name=spacing][value=${p.spacing}]`).checked = true;
+    if (p.avoid_waitlist === false) $("#pref-waitlist").checked = false;
+    if (p.include_closed) $("#pref-closed").checked = true;
 
-            // Fix: sync hidden input with text input properly
-            const hiddenInput = block.querySelector('input[name="lecture_section"]');
-            const textInput   = block.querySelector('.form-input[placeholder="e.g. 001"]');
-            textInput.addEventListener('input', () => {
-                hiddenInput.value = textInput.value;
-            });
+    state.busy = saved.busy || [];
+    renderBusy();
 
-            document.getElementById('lecturesContainer').appendChild(block);
+    document.querySelectorAll(".prefs input, .prefs select").forEach(el => el.addEventListener("change", save));
+}
 
-            // Add first discussion automatically if toggle is on
-            if (hasDiscussion) addDiscussion(li);
-        }
+function readPrefs() {
+    return {
+        earliest_start: +$("#pref-start").value,
+        latest_end:     +$("#pref-end").value,
+        days_off:       [...document.querySelectorAll("#pref-days input:checked")].map(i => i.value),
+        spacing:        document.querySelector("input[name=spacing]:checked").value,
+        avoid_waitlist: $("#pref-waitlist").checked,
+        include_closed: $("#pref-closed").checked,
+    };
+}
 
-        // ── Discussion builder ────────────────────────────────────
-        const discCounts = {};
+function renderBusy() {
+    $("#busy").innerHTML = state.busy.map((b, i) => `
+        <div class="busy-row" data-i="${i}">
+            ${DAYS.map(d => `<label class="chip"><input type="checkbox" value="${d}" ${b.days.includes(d) ? "checked" : ""}><span>${d[0]}${d === "Thu" ? "h" : ""}</span></label>`).join("")}
+            <select data-k="start">${timeOptions(700, 2200)}</select>
+            <span class="muted">–</span>
+            <select data-k="end">${timeOptions(730, 2300)}</select>
+            <button class="small danger" data-remove-busy="${i}" aria-label="Remove">✕</button>
+        </div>`).join("");
 
-        function addDiscussion(lectureIndex) {
-            if (!discCounts[lectureIndex]) discCounts[lectureIndex] = 0;
-            const di = discCounts[lectureIndex]++;
+    document.querySelectorAll(".busy-row").forEach(row => {
+        const b = state.busy[+row.dataset.i];
+        row.querySelector("[data-k=start]").value = b.start;
+        row.querySelector("[data-k=end]").value = b.end;
+        row.addEventListener("change", () => {
+            b.days  = [...row.querySelectorAll("input:checked")].map(i => i.value);
+            b.start = +row.querySelector("[data-k=start]").value;
+            b.end   = +row.querySelector("[data-k=end]").value;
+            save();
+        });
+    });
+    document.querySelectorAll("[data-remove-busy]").forEach(btn => btn.addEventListener("click", () => {
+        state.busy.splice(+btn.dataset.removeBusy, 1);
+        renderBusy();
+        save();
+    }));
+}
 
-            const block = document.createElement('div');
-            block.className = 'disc-block';
-            block.innerHTML = `
-                <div class="disc-block-header">
-                    <span class="disc-block-title">Discussion ${di + 1}</span>
-                    ${di > 0
-                        ? `<button type="button" class="remove-btn"
-                               onclick="this.closest('.disc-block').remove()">✕</button>`
-                        : ''}
-                </div>
+$("#add-busy").addEventListener("click", () => {
+    state.busy.push({ days: [], start: 1200, end: 1300 });
+    renderBusy();
+    save();
+});
 
-                <input type="hidden" name="disc_section_${lectureIndex}" value="">
-                <div class="form-group" style="margin-bottom:10px;">
-                    <label class="form-label">Section Number</label>
-                    <input type="text" class="form-input" placeholder="e.g. 101" style="margin-top:0;">
-                </div>
+// ── Build schedules ─────────────────────────────────────────
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-                    <div class="form-group">
-                        <label class="form-label">Start Time</label>
-                        <input type="time" name="disc_start_${lectureIndex}" class="form-input" value="14:00" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">End Time</label>
-                        <input type="time" name="disc_end_${lectureIndex}" class="form-input" value="15:00" required>
-                    </div>
-                </div>
+$("#generate").addEventListener("click", async () => {
+    const out = $("#output");
+    if (!state.mine.length) {
+        out.innerHTML = `<div class="empty"><b>Add some courses first</b>Search on the left and hit “+ Add”.</div>`;
+        return;
+    }
+    const btn = $("#generate");
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span> Building…`;
+    out.innerHTML = `<div class="empty"><span class="spinner"></span> Pulling live sections and seat counts…</div>`;
 
-                <div class="form-label" style="margin-bottom:6px;">Meeting Days</div>
-                <div class="days-group">
-                    ${DAYS.map(day => `
-                        <div class="day-pill" onclick="toggleDay(this, true)">
-                            ${day}
-                            <input type="checkbox" name="disc_days_${lectureIndex}_${di}"
-                                   value="${day}" style="display:none;">
-                        </div>
-                    `).join('')}
-                </div>
-            `;
+    const prefs = readPrefs();
+    try {
+        const res = await fetch("/api/schedules", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                term: state.term,
+                courses: state.mine,
+                prefs,
+                include_closed: prefs.include_closed,
+                blocked: state.busy,
+            }),
+        }).then(r => r.json());
+        state.lastResult = res;
+        state.plans = res.plans || [];
+        state.activePlan = 0;
+        renderOutput();
+        if (window.innerWidth <= 900) out.scrollIntoView({ behavior: "smooth" });
+    } catch (e) {
+        out.innerHTML = `<div class="empty"><b>Something went wrong</b>Couldn't reach the server or the UW API. Try again in a moment.</div>`;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "Build my schedule";
+    }
+});
 
-            // Sync hidden section input
-            const hiddenInput = block.querySelector(`input[name="disc_section_${lectureIndex}"]`);
-            const textInput   = block.querySelector('.form-input[placeholder="e.g. 101"]');
-            textInput.addEventListener('input', () => {
-                hiddenInput.value = textInput.value;
-            });
+function renderOutput() {
+    const res = state.lastResult;
+    const out = $("#output");
 
-            document.getElementById(`discContainer_${lectureIndex}`).appendChild(block);
-        }
+    if (res.error) {
+        out.innerHTML = `<div class="empty"><b>Hmm</b>${esc(res.error)}</div>`;
+        return;
+    }
 
-        // Start with Lecture 1 already visible
-        addLecture();
-    </script>
+    let alerts = "";
+    if (res.unschedulable.length) {
+        alerts += `<div class="alert bad">No open section fits for: <b>${res.unschedulable.map(esc).join(", ")}</b>. Try “Include full sections”, or remove a busy time.</div>`;
+    }
+    if (res.online.length) {
+        alerts += `<div class="alert">Online / no set meeting time: <b>${res.online.map(esc).join(", ")}</b> — not shown on the calendar.</div>`;
+    }
+
+    if (!state.plans.length) {
+        out.innerHTML = alerts + `<div class="empty"><b>No conflict-free schedule</b>These courses can't all fit together. Try removing one, or allow full sections.</div>`;
+        return;
+    }
+
+    const plan = state.plans[state.activePlan];
+    const tabs = state.plans.map((p, i) => `
+        <button class="tab ${i === state.activePlan ? "active" : ""}" data-plan="${i}">
+            <div class="tiny muted">Plan ${"ABC"[i]}${i ? " · backup" : ""}</div>
+            <div class="score">${p.score}<span class="tiny muted"> / 100</span></div>
+            <div class="tiny muted">${p.credits} credits</div>
+        </button>`).join("");
+
+    const notes = plan.notes.map(n => `<span class="tag">${esc(n)}</span>`).join("");
+    const walks = plan.tight_walks.map(w =>
+        `<div class="alert">${esc(w.day)}: ${esc(w.from)} → ${esc(w.to)} is a ~${w.walk} min walk with ${w.gap} min between.</div>`).join("");
+
+    out.innerHTML = `
+        <h2>Your schedule <small>${res.total >= 5000 ? "5000+" : res.total.toLocaleString()} possible combinations checked</small></h2>
+        ${alerts}
+        <div class="tabs">${tabs}</div>
+        ${notes ? `<div class="notes">${notes}</div>` : ""}
+        ${walks}
+        ${calendar(plan)}
+        ${sectionTable(plan)}
+        <div class="actions">
+            <button id="copy-numbers">Copy class numbers</button>
+            <button id="download-ics">Add to calendar (.ics)</button>
+        </div>`;
+
+    out.querySelectorAll("[data-plan]").forEach(btn => btn.addEventListener("click", () => {
+        state.activePlan = +btn.dataset.plan;
+        renderOutput();
+    }));
+    $("#copy-numbers").addEventListener("click", copyNumbers);
+    $("#download-ics").addEventListener("click", downloadIcs);
+}
+
+function calendar(plan) {
+    const busyBlocks = state.busy.filter(b => b.days.length).map(b => ({
+        name: "Busy", type: "busy", days: b.days, start: b.start, end: b.end, section: "",
+    }));
+    const items = [...plan.sections, ...busyBlocks];
+
+    const startHour = Math.min(8, ...items.map(s => Math.floor(s.start / 100)));
+    const endHour   = Math.max(17, ...items.map(s => Math.ceil(toMin(s.end) / 60)));
+    const pxPerMin  = 0.9;
+    const height    = (endHour - startHour) * 60 * pxPerMin;
+    const top       = (t) => (toMin(t) - startHour * 60) * pxPerMin;
+
+    let times = "", lines = "";
+    for (let h = startHour; h <= endHour; h++) {
+        const y = (h - startHour) * 60 * pxPerMin;
+        times += `<div class="cal-time" style="top:${y}px">${fmtTime(h * 100)}</div>`;
+        lines += `<div class="cal-line" style="top:${y}px"></div>`;
+    }
+
+    const cols = DAYS.map(day => {
+        const blocks = items.filter(s => s.days.includes(day)).map(s => {
+            const style = s.type === "busy" ? "" : `background:${colorFor(s.name)}`;
+            const label = s.type === "busy" ? "Busy" : `${esc(s.name)}`;
+            const sub   = s.type === "busy" ? "" : `${s.type.slice(0, 3).toUpperCase()} ${esc(s.section)}${s.building ? " · " + esc(s.building) : ""}`;
+            return `<div class="block ${s.type}" style="top:${top(s.start)}px;height:${(toMin(s.end) - toMin(s.start)) * pxPerMin}px;${style}"
+                        title="${label} ${sub} ${fmtTime(s.start)}–${fmtTime(s.end)}">
+                        <b>${label}</b>${sub}<br>${fmtTime(s.start)}–${fmtTime(s.end)}
+                    </div>`;
+        }).join("");
+        return `<div class="cal-day" style="height:${height}px">${lines}${blocks}</div>`;
+    }).join("");
+
+    return `
+        <div class="calendar">
+            <div></div>${DAYS.map(d => `<div class="cal-head">${d}</div>`).join("")}
+            <div class="cal-times" style="height:${height}px">${times}</div>${cols}
+        </div>`;
+}
+
+function sectionTable(plan) {
+    const rows = plan.sections.map(s => {
+        const inst = s.instructors.map(i =>
+            `${esc(i.name)}${i.grades ? ` <span class="tag gpa ${gpaClass(i.grades.gpa)}">${i.grades.gpa.toFixed(2)}</span>` : ""}`).join("<br>") || `<span class="muted">TBA</span>`;
+        const seats = s.status
+            ? `<span class="status-${s.status}">${s.status === "OPEN" ? `${s.open_seats ?? "?"} open` : s.status.toLowerCase()}</span>${s.waitlist ? `<br><span class="tiny muted">${s.waitlist} on waitlist</span>` : ""}`
+            : "";
+        return `
+            <tr>
+                <td><span class="swatch" style="display:inline-block;background:${colorFor(s.name)}"></span> ${esc(s.name)}</td>
+                <td>${s.type.slice(0, 3).toUpperCase()} ${esc(s.section)}</td>
+                <td>${s.days.join("/")}<br><span class="muted">${fmtTime(s.start)}–${fmtTime(s.end)}</span></td>
+                <td>${esc(s.building || "—")}${s.room ? `<br><span class="muted">Rm ${esc(s.room)}</span>` : ""}</td>
+                <td>${inst}</td>
+                <td>${seats}</td>
+                <td>${s.class_number ?? ""}</td>
+            </tr>`;
+    }).join("");
+    return `
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Course</th><th>Section</th><th>When</th><th>Where</th><th>Instructor</th><th>Seats</th><th>Class #</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>`;
+}
+
+// ── Export ──────────────────────────────────────────────────
+
+function copyNumbers() {
+    const plan = state.plans[state.activePlan];
+    const byCourse = {};
+    for (const s of plan.sections) {
+        if (s.class_number) (byCourse[s.name] ||= new Set()).add(`${s.type.slice(0, 3).toUpperCase()} ${s.section} (#${s.class_number})`);
+    }
+    const text = Object.entries(byCourse).map(([name, secs]) => `${name}: ${[...secs].join(", ")}`).join("\n");
+    navigator.clipboard.writeText(text).then(() => {
+        $("#copy-numbers").textContent = "Copied!";
+        setTimeout(() => { const b = $("#copy-numbers"); if (b) b.textContent = "Copy class numbers"; }, 1500);
+    });
+}
+
+function downloadIcs() {
+    const plan = state.plans[state.activePlan];
+    const term = state.terms.find(t => t.code === state.term);
+    const pad  = (n) => String(n).padStart(2, "0");
+    const ymd  = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+    const hm   = (t) => `${pad(Math.floor(t / 100))}${pad(t % 100)}00`;
+    const dayIdx = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+
+    const start = new Date(term.start + "T00:00:00");
+    // UNTIL must be UTC; 05:59Z the day after the last class day = end of that day in Madison
+    const last  = new Date(term.end + "T00:00:00");
+    last.setDate(last.getDate() + 1);
+    const until = ymd(last) + "T055959Z";
+
+    const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MadPlan//EN", "CALSCALE:GREGORIAN"];
+    plan.sections.forEach((s, i) => {
+        // First meeting = first date on/after term start that falls on one of the section's days
+        const first = new Date(start);
+        while (!s.days.some(d => dayIdx[d] === first.getDay())) first.setDate(first.getDate() + 1);
+        lines.push(
+            "BEGIN:VEVENT",
+            `UID:${state.term}-${s.class_number || i}-${i}@madplan`,
+            `SUMMARY:${s.name} ${s.type.slice(0, 3).toUpperCase()} ${s.section}`,
+            `LOCATION:${[s.building, s.room && "Rm " + s.room].filter(Boolean).join(" ")}`,
+            `DTSTART;TZID=America/Chicago:${ymd(first)}T${hm(s.start)}`,
+            `DTEND;TZID=America/Chicago:${ymd(first)}T${hm(s.end)}`,
+            `RRULE:FREQ=WEEKLY;BYDAY=${s.days.map(d => ICS_DAYS[d]).join(",")};UNTIL=${until}`,
+            "END:VEVENT",
+        );
+    });
+    lines.push("END:VCALENDAR");
+
+    const blob = new Blob([lines.join("\r\n")], { type: "text/calendar" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${term.name.replace(" ", "-")}-schedule.ics`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+// ── Boot ────────────────────────────────────────────────────
+
+(async () => {
+    const saved = load();
+    state.mine = saved.mine || [];
+    initPrefs(saved);
+    renderMine();
+    try {
+        await initTerms(saved);
+    } catch (e) {
+        $("#output").innerHTML = `<div class="empty"><b>Can't reach UW's course API</b>Check your connection and reload.</div>`;
+    }
+})();
+</script>
 </body>
 </html>
