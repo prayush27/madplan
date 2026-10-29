@@ -137,7 +137,25 @@
         .toggles input:focus-visible + span { outline: 2px solid var(--red); outline-offset: 1px; }
         .check { display: flex; gap: 10px; align-items: center; cursor: pointer; }
         .check input { accent-color: var(--ink); width: 15px; height: 15px; }
+        .pref input[type=text] { padding: 6px 0; }
+        .inline-form { display: flex; gap: 12px; align-items: center; }
+        .inline-form input[type=text] { flex: 1; min-width: 0; }
+        .inline-form select { width: auto; padding: 6px 16px 6px 0; }
+        #search { margin-top: 8px; }
         .busy-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 0; }
+
+        /* Why these / alternatives */
+        .why { margin-top: 28px; }
+        .why h3, .alts h3 { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 22px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+        .pick { display: grid; grid-template-columns: 10px 1fr auto; gap: 2px 12px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--hair); }
+        .pick .dot { align-self: center; }
+        .pick .reasons { grid-column: 2 / -1; font-size: 12px; color: var(--ink-2); }
+        .pick .reasons .twice { color: var(--red); }
+        .alts { margin-top: 48px; }
+        .alt-group { margin-top: 20px; }
+        .alt-group h4 { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; padding-bottom: 6px; border-bottom: 1px solid var(--hair); }
+        .alt { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 16px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--hair); font-size: 13px; }
+        .alt .meta { grid-column: 1 / -1; }
         .busy-row select { width: auto; padding: 4px 16px 4px 0; }
 
         /* ── Schedule ─────────────────────────────────── */
@@ -217,23 +235,76 @@
 
     <div class="hero">
         <h1>Plan your<br><em>semester.</em></h1>
-        <p>Find classes, see how they've been graded, and lay out a week that works. Seats are live from Course Search &amp; Enroll.</p>
+        <p>Say what you still need and what you're into. You get classes that count, fit your week, and have been graded kindly. Seats are live from Course Search &amp; Enroll.</p>
     </div>
 
     <div class="layout">
         <div class="left">
             <section class="section">
-                <div class="section-head"><span class="num">01</span><h2>Find courses</h2></div>
-                <input type="text" id="search" placeholder="COMP SCI 400, psychology…" autocomplete="off" aria-label="Search courses">
+                <div class="section-head"><span class="num">01</span><h2>What you need</h2></div>
+                <div id="reqs"></div>
+                <div class="pref">
+                    <label for="req-add">Requirement</label>
+                    <select id="req-add"><option value="">Add one…</option></select>
+                </div>
+                <div class="pref">
+                    <span>Major course</span>
+                    <div class="inline-form">
+                        <input type="text" id="req-subject" placeholder="cs, econ…" aria-label="Subject">
+                        <select id="req-level" aria-label="Level">
+                            <option value="0">any level</option>
+                            <option value="200">200+</option>
+                            <option value="300">300+</option>
+                            <option value="400">400+</option>
+                            <option value="500">500+</option>
+                        </select>
+                        <button class="link small" id="req-subject-add">Add</button>
+                    </div>
+                </div>
+                <div class="pref">
+                    <label for="interests">Into</label>
+                    <input type="text" id="interests" placeholder="music, film, psychology" autocomplete="off">
+                </div>
+                <div class="pref">
+                    <span>Lean toward</span>
+                    <div class="toggles">
+                        <label><input type="radio" name="priority" value="easy"><span>Easy</span></label>
+                        <label><input type="radio" name="priority" value="balanced" checked><span>Both</span></label>
+                        <label><input type="radio" name="priority" value="interesting"><span>Interesting</span></label>
+                    </div>
+                </div>
+                <div class="pref">
+                    <span>Your year</span>
+                    <div class="toggles">
+                        <label><input type="radio" name="standing" value="1"><span>1st</span></label>
+                        <label><input type="radio" name="standing" value="2" checked><span>2nd</span></label>
+                        <label><input type="radio" name="standing" value="3"><span>3rd</span></label>
+                        <label><input type="radio" name="standing" value="4"><span>4th+</span></label>
+                    </div>
+                </div>
+                <div class="pref">
+                    <label for="target">Fill to</label>
+                    <select id="target">
+                        <option value="0">just the requirements</option>
+                        <option value="12">12 credits</option>
+                        <option value="13">13 credits</option>
+                        <option value="14">14 credits</option>
+                        <option value="15">15 credits</option>
+                        <option value="16">16 credits</option>
+                        <option value="17">17 credits</option>
+                        <option value="18">18 credits</option>
+                    </select>
+                </div>
+            </section>
+
+            <section class="section">
+                <div class="section-head"><span class="num">02</span><h2>Must-haves</h2><span class="aside" id="credit-total"></span></div>
+                <div id="mine"></div>
+                <input type="text" id="search" placeholder="Already know one? cs400, math 222…" autocomplete="off" aria-label="Search courses">
                 {% if not grades_enabled %}
                 <p class="status">Grade data is off. Add MADGRADES_TOKEN to .env to see it.</p>
                 {% endif %}
                 <div id="results"></div>
-            </section>
-
-            <section class="section">
-                <div class="section-head"><span class="num">02</span><h2>Your courses</h2><span class="aside" id="credit-total"></span></div>
-                <div id="mine"></div>
             </section>
 
             <section class="section">
@@ -265,6 +336,10 @@
                         <label class="check" style="margin-top:6px"><input type="checkbox" id="pref-closed"> Show full sections</label>
                     </div>
                 </div>
+                <div class="pref">
+                    <span>Prereqs</span>
+                    <label class="check"><input type="checkbox" id="pref-prereqs" checked> Only suggest classes with no course prereqs</label>
+                </div>
                 <div class="pref" style="align-items:start">
                     <span style="padding-top:4px">Busy</span>
                     <div>
@@ -283,7 +358,7 @@
                 <div id="output">
                     <div class="empty">
                         <span class="serif">Nothing here yet.</span>
-                        <span class="muted">Add a few courses, set your preferences, then make schedules.</span>
+                        <span class="muted">Add what you need, maybe a must-have or two, then make schedules.</span>
                     </div>
                 </div>
             </section>
@@ -305,11 +380,14 @@ const TYPE_ABBR = { lecture: "LEC", discussion: "DIS", lab: "LAB", seminar: "SEM
 const state = {
     term: null,
     terms: [],
-    mine: [],      // course summaries the student added
+    mine: [],      // must-have course summaries
+    reqs: [],      // [{kind: "humanities", label: "Humanities"}, {kind: "subject", subject: "cs", min: 300, label}]
+    kinds: [],     // requirement kinds the server knows about
     busy: [],      // [{days: [...], start: 1200, end: 1300}]
     plans: [],
     activePlan: 0,
     lastResult: null,
+    colorOrder: [],  // course names in the order they get colors
 };
 
 // ── Helpers ─────────────────────────────────────────────────
@@ -338,14 +416,16 @@ function gpaBlock(stats) {
 }
 
 function colorFor(name) {
-    const i = state.mine.findIndex(c => c.name === name);
+    let i = state.colorOrder.indexOf(name);
+    if (i < 0) i = state.mine.findIndex(c => c.name === name);
     return COLORS[(i < 0 ? 0 : i) % COLORS.length];
 }
 
 function save() {
     try {
         localStorage.setItem("madplan", JSON.stringify({
-            term: state.term, mine: state.mine, busy: state.busy, prefs: readPrefs(),
+            term: state.term, mine: state.mine, busy: state.busy, reqs: state.reqs,
+            prefs: readPrefs(), needs: readNeeds(),
         }));
     } catch (e) { /* storage unavailable — fine, just won't persist */ }
 }
@@ -367,7 +447,7 @@ async function initTerms(saved) {
 
 $("#term").addEventListener("change", (e) => {
     // Course ids are per term, so the old list may not apply
-    if (state.mine.length && !confirm("Switching terms clears your course list. Continue?")) {
+    if (state.mine.length && !confirm("Switching terms clears your must-haves. Continue?")) {
         e.target.value = state.term;
         return;
     }
@@ -377,6 +457,74 @@ $("#term").addEventListener("change", (e) => {
     runSearch();
     save();
 });
+
+// ── What you need ───────────────────────────────────────────
+
+async function initNeeds(saved) {
+    const n = saved.needs || {};
+    state.reqs = saved.reqs || [];
+    $("#interests").value = n.interests || "";
+    if (n.priority) document.querySelector(`input[name=priority][value=${n.priority}]`).checked = true;
+    if (n.standing) document.querySelector(`input[name=standing][value="${n.standing}"]`).checked = true;
+    if (n.target) $("#target").value = n.target;
+    renderReqs();
+
+    document.querySelectorAll("#interests, input[name=priority], input[name=standing], #target")
+        .forEach(el => el.addEventListener("change", save));
+
+    state.kinds = await fetch("/api/requirements").then(r => r.json());
+    $("#req-add").innerHTML = `<option value="">Add one…</option>` +
+        state.kinds.map(k => `<option value="${k.kind}">${esc(k.label)}</option>`).join("");
+}
+
+function readNeeds() {
+    return {
+        interests: $("#interests").value,
+        priority:  document.querySelector("input[name=priority]:checked").value,
+        standing:  +document.querySelector("input[name=standing]:checked").value,
+        target:    +$("#target").value,
+    };
+}
+
+function renderReqs() {
+    const box = $("#reqs");
+    if (!state.reqs.length) {
+        box.innerHTML = `<p class="status">Pick the requirements you still have left. Your DARS lists them.</p>`;
+        return;
+    }
+    box.innerHTML = state.reqs.map((r, i) => `
+        <div class="mine-row" style="grid-template-columns: 10px 1fr auto">
+            <span class="dot" style="background:var(--ink)"></span>
+            <div class="code">${esc(r.label)}</div>
+            <button class="link small" data-remove-req="${i}">Remove</button>
+        </div>`).join("");
+    box.querySelectorAll("[data-remove-req]").forEach(btn => btn.addEventListener("click", () => {
+        state.reqs.splice(+btn.dataset.removeReq, 1);
+        renderReqs();
+        save();
+    }));
+}
+
+$("#req-add").addEventListener("change", (e) => {
+    const kind = state.kinds.find(k => k.kind === e.target.value);
+    e.target.value = "";
+    if (!kind) return;
+    state.reqs.push({ kind: kind.kind, label: kind.label });
+    renderReqs();
+    save();
+});
+
+function addSubjectReq() {
+    const subject = $("#req-subject").value.trim();
+    if (!subject) return;
+    const min = +$("#req-level").value;
+    state.reqs.push({ kind: "subject", subject, min, label: `${subject.toUpperCase()} course${min ? ` ${min}+` : ""}` });
+    $("#req-subject").value = "";
+    renderReqs();
+    save();
+}
+$("#req-subject-add").addEventListener("click", addSubjectReq);
+$("#req-subject").addEventListener("keydown", (e) => { if (e.key === "Enter") addSubjectReq(); });
 
 // ── Search ──────────────────────────────────────────────────
 
@@ -435,7 +583,7 @@ function courseRow(c, i) {
             ${gpaBlock(g)}
             <div class="meta">${meta}</div>
             <div class="row-actions">
-                <button class="link" data-add="${i}" ${added ? "disabled" : ""}>${added ? "Added" : "Add to list"}</button>
+                <button class="link" data-add="${i}" ${added ? "disabled" : ""}>${added ? "Added" : "Must-have"}</button>
             </div>
             <details>
                 <summary>About this course</summary>
@@ -458,7 +606,7 @@ function addCourse(c) {
 function renderMine() {
     const box = $("#mine");
     if (!state.mine.length) {
-        box.innerHTML = `<p class="status">None yet. Search above and add a few.</p>`;
+        box.innerHTML = `<p class="status">Optional. Classes you're definitely taking; suggestions fit around them.</p>`;
         $("#credit-total").textContent = "";
         return;
     }
@@ -506,6 +654,7 @@ function initPrefs(saved) {
     if (p.spacing) document.querySelector(`input[name=spacing][value=${p.spacing}]`).checked = true;
     if (p.avoid_waitlist === false) $("#pref-waitlist").checked = false;
     if (p.include_closed) $("#pref-closed").checked = true;
+    if (p.skip_prereqs === false) $("#pref-prereqs").checked = false;
 
     state.busy = saved.busy || [];
     renderBusy();
@@ -521,6 +670,7 @@ function readPrefs() {
         spacing:        document.querySelector("input[name=spacing]:checked").value,
         avoid_waitlist: $("#pref-waitlist").checked,
         include_closed: $("#pref-closed").checked,
+        skip_prereqs:   $("#pref-prereqs").checked,
     };
 }
 
@@ -562,30 +712,44 @@ $("#add-busy").addEventListener("click", () => {
 
 // ── Build schedules ─────────────────────────────────────────
 
-$("#generate").addEventListener("click", async () => {
+async function makeSchedules() {
     const out = $("#output");
-    if (!state.mine.length) {
-        out.innerHTML = `<div class="empty"><span class="serif">No courses yet.</span><span class="muted">Add at least one from the search on the left.</span></div>`;
+    const filling = state.reqs.length > 0;
+    if (!filling && !state.mine.length) {
+        out.innerHTML = `<div class="empty"><span class="serif">Nothing to plan yet.</span><span class="muted">Add a requirement you still need, or a must-have course.</span></div>`;
         return;
     }
     const btn = $("#generate");
     btn.disabled = true;
     btn.firstElementChild.textContent = "Working";
     btn.firstElementChild.classList.add("spin");
-    out.innerHTML = `<div class="empty"><span class="serif spin">Checking sections</span><span class="muted">Pulling live seats and times from Course Search &amp; Enroll.</span></div>`;
+    out.innerHTML = filling
+        ? `<div class="empty"><span class="serif spin">Looking through the catalog</span><span class="muted">Checking every class that counts, its open sections and its grade history. The first run for a requirement can take ten seconds or so.</span></div>`
+        : `<div class="empty"><span class="serif spin">Checking sections</span><span class="muted">Pulling live seats and times from Course Search &amp; Enroll.</span></div>`;
 
     const prefs = readPrefs();
+    const needs = readNeeds();
+    const body = {
+        term: state.term,
+        courses: state.mine,
+        prefs,
+        include_closed: prefs.include_closed,
+        blocked: state.busy,
+    };
+    if (filling) Object.assign(body, {
+        requirements:   state.reqs,
+        interests:      needs.interests.split(",").map(s => s.trim()).filter(Boolean),
+        priority:       needs.priority,
+        standing:       needs.standing,
+        target_credits: needs.target,
+        skip_prereqs:   prefs.skip_prereqs,
+    });
+
     try {
-        const res = await fetch("/api/schedules", {
+        const res = await fetch(filling ? "/api/fill" : "/api/schedules", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                term: state.term,
-                courses: state.mine,
-                prefs,
-                include_closed: prefs.include_closed,
-                blocked: state.busy,
-            }),
+            body: JSON.stringify(body),
         }).then(r => r.json());
         state.lastResult = res;
         state.plans = res.plans || [];
@@ -599,7 +763,9 @@ $("#generate").addEventListener("click", async () => {
         btn.firstElementChild.textContent = "Make schedules";
         btn.firstElementChild.classList.remove("spin");
     }
-});
+}
+
+$("#generate").addEventListener("click", makeSchedules);
 
 function renderOutput() {
     const res = state.lastResult;
@@ -612,21 +778,33 @@ function renderOutput() {
     }
 
     let alerts = "";
-    if (res.unschedulable.length) {
-        alerts += `<div class="note-line bad"><b>${res.unschedulable.map(esc).join(", ")}</b>: no open section fits. Allow full sections or remove a busy time.</div>`;
+    for (const name of res.unschedulable || []) {
+        alerts += `<div class="note-line bad"><b>${esc(name)}</b>: no open section fits. Allow full sections or remove a busy time.</div>`;
     }
-    if (res.online.length) {
+    if ((res.online || []).length) {
         alerts += `<div class="note-line"><b>${res.online.map(esc).join(", ")}</b>: online with no set meeting time, so not on the calendar.</div>`;
+    }
+    for (const c of res.covered || []) {
+        alerts += `<div class="note-line">${esc(c.label)} is already covered by <b>${esc(c.by)}</b>.</div>`;
+    }
+    for (const label of res.unfilled || []) {
+        alerts += `<div class="note-line bad">Nothing open for <b>${esc(label)}</b> fits around your must-haves and busy times.</div>`;
     }
 
     if (!state.plans.length) {
-        out.innerHTML = alerts + `<div class="empty"><span class="serif">These don't fit together.</span><span class="muted">Every combination has a time conflict. Try dropping a course or allowing full sections.</span></div>`;
+        out.innerHTML = alerts + `<div class="empty"><span class="serif">These don't fit together.</span><span class="muted">Every combination has a time conflict. Try dropping a course or allowing full sections.</span></div>` +
+            alternativesBlock(res);
+        bindAlternatives(out);
         return;
     }
 
-    $("#checked").textContent = `${res.total >= 5000 ? "5,000+" : res.total.toLocaleString()} combinations checked`;
+    $("#checked").textContent = res.checked != null
+        ? `${res.checked.toLocaleString()} classes considered, ${res.fitting.toLocaleString()} fit`
+        : `${res.total >= 5000 ? "5,000+" : res.total.toLocaleString()} combinations checked`;
 
     const plan = state.plans[state.activePlan];
+    state.colorOrder = [...state.mine.map(c => c.name), ...(plan.picks || []).map(p => p.name)];
+
     const tabs = state.plans.map((p, i) => `
         <button class="plan ${i === state.activePlan ? "active" : ""}" data-plan="${i}" aria-pressed="${i === state.activePlan}">
             <span class="letter">${"ABC"[i]}</span>
@@ -645,12 +823,14 @@ function renderOutput() {
         <div class="plans">${tabs}</div>
         ${notes}
         ${walks}
+        ${plan.picks ? whyBlock(plan) : ""}
         ${calendar(plan)}
         ${sectionTable(plan)}
         <div class="exports">
             <button class="link" id="copy-numbers">Copy class numbers</button>
             <button class="link" id="download-ics">Download for Google / Apple Calendar</button>
-        </div>`;
+        </div>
+        ${alternativesBlock(res)}`;
 
     out.querySelectorAll("[data-plan]").forEach(btn => btn.addEventListener("click", () => {
         state.activePlan = +btn.dataset.plan;
@@ -658,6 +838,71 @@ function renderOutput() {
     }));
     $("#copy-numbers").addEventListener("click", copyNumbers);
     $("#download-ics").addEventListener("click", downloadIcs);
+    bindAlternatives(out);
+}
+
+function reasons(c) {
+    const parts = [];
+    if (c.satisfies && c.satisfies.length) {
+        parts.push(c.satisfies.length > 1
+            ? `<span class="twice">${c.satisfies.map(esc).join(" + ")}</span>`
+            : esc(c.satisfies[0]));
+    } else if (c.satisfies) {
+        parts.push("Elective");
+    }
+    if (c.ease) parts.push(`${c.ease.gpa.toFixed(2)} avg GPA, ${c.ease.pct_a}% A`);
+    if (c.interest) parts.push(`matches “${esc(c.interest)}”`);
+    if (c.online) parts.push("online");
+    parts.push(`${esc(c.credits)} cr`);
+    return parts.join(" · ");
+}
+
+function whyBlock(plan) {
+    const mustRows = state.mine.map(c => `
+        <div class="pick">
+            <span class="dot" style="background:${colorFor(c.name)}"></span>
+            <div><span class="code">${esc(c.name)}</span> <span class="muted">${esc(c.title)}</span></div>
+            <span class="small faint">must-have</span>
+        </div>`).join("");
+    const pickRows = plan.picks.map(c => `
+        <div class="pick">
+            <span class="dot" style="background:${colorFor(c.name)}"></span>
+            <div><span class="code">${esc(c.name)}</span> <span class="muted">${esc(c.title)}</span></div>
+            <button class="link small" data-pin="${esc(c.name)}">Keep</button>
+            <div class="reasons">${reasons(c)}</div>
+        </div>`).join("");
+    return `<div class="why"><h3>Why these</h3>${mustRows}${pickRows}</div>`;
+}
+
+function alternativesBlock(res) {
+    if (!res.alternatives || !res.alternatives.length) return "";
+    const groups = res.alternatives.map(g => `
+        <div class="alt-group">
+            <h4>${esc(g.label)}</h4>
+            ${g.options.map(c => `
+                <div class="alt">
+                    <div><span class="code">${esc(c.name)}</span> <span class="muted">${esc(c.title)}</span></div>
+                    <span class="small ${c.ease && c.ease.gpa < 3 ? "closed" : "muted"}">${c.ease ? c.ease.gpa.toFixed(2) : "—"}</span>
+                    <button class="link small" data-pin="${esc(c.name)}">Use this</button>
+                    <div class="meta">${reasons(c)}</div>
+                    <details><summary>About this course</summary><p>${esc(c.description)}</p>
+                        ${c.prerequisites ? `<p><b>Requires:</b> ${esc(c.prerequisites)}</p>` : ""}</details>
+                </div>`).join("")}
+        </div>`).join("");
+    return `<div class="alts"><h3>Other options</h3><p class="status">Like one of these better? “Use this” makes it a must-have and rebuilds around it.</p>${groups}</div>`;
+}
+
+function bindAlternatives(out) {
+    // "Keep" / "Use this": pin the course as a must-have and rebuild around it
+    const lookup = {};
+    for (const g of state.lastResult.alternatives || []) for (const c of g.options) lookup[c.name] = c;
+    for (const p of state.plans) for (const c of p.picks || []) lookup[c.name] = c;
+    out.querySelectorAll("[data-pin]").forEach(btn => btn.addEventListener("click", () => {
+        const c = lookup[btn.dataset.pin];
+        if (!c) return;
+        addCourse(c);
+        makeSchedules();
+    }));
 }
 
 function calendar(plan) {
@@ -792,7 +1037,7 @@ function downloadIcs() {
     initPrefs(saved);
     renderMine();
     try {
-        await initTerms(saved);
+        await Promise.all([initTerms(saved), initNeeds(saved)]);
     } catch (e) {
         $("#output").innerHTML = `<div class="empty"><span class="serif">Offline.</span><span class="muted">Couldn't reach UW's course API. Check your connection and reload.</span></div>`;
     }
