@@ -5,26 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MadPlan</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23c5050c'/></svg>">
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;700;800;900&family=Red+Hat+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --paper: #f3f0e8;
-            --paper-2: #ebe7dc;
-            --ink: #161513;
-            --ink-2: #57534b;
-            --ink-3: #8c877c;
-            --rule: #161513;
-            --hair: #d6d1c4;
+            /* UW–Madison brand palette: Badger Red, Dark Red, Light Gray, Black, White */
+            --paper: #ffffff;
+            --paper-2: #f7f7f7;
+            --gray: #e1e5e7;
+            --ink: #121212;
+            --ink-2: #4a4a4a;
+            --ink-3: #6b6b6b;
+            --rule: #282728;
+            --hair: #dadfe1;
             --red: #c5050c;
-            --amber: #9a6a00;
-            --green: #2f6b3a;
+            --red-dark: #9b0000;
+            --amber: #8a5a00;
+            --green: #2a6b37;
             --gutter: 32px;
         }
 
         body {
-            font-family: 'Instrument Sans', system-ui, sans-serif;
+            font-family: 'Red Hat Text', system-ui, sans-serif;
             font-size: 14px;
             line-height: 1.45;
             background: var(--paper);
@@ -33,44 +36,49 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        .serif { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; }
+        .serif { font-family: 'Red Hat Display', system-ui, sans-serif; font-weight: 800; }
         .muted { color: var(--ink-2); }
         .faint { color: var(--ink-3); }
         .small { font-size: 12px; }
 
         .wrap { max-width: 1440px; margin: 0 auto; padding: 0 var(--gutter); }
 
-        /* ── Masthead ─────────────────────────────────── */
-        .top {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 18px 0; border-bottom: 1px solid var(--rule);
-        }
-        .wordmark { font-weight: 600; letter-spacing: -0.01em; }
-        .wordmark i { color: var(--red); font-style: normal; }
+        /* ── Global bar + hero (UW theme pattern: red bar, red hero band) ── */
+        .global { background: var(--red); color: #fff; }
+        .global-inner { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-top: 12px; padding-bottom: 12px; }
+        .wordmark { font-family: 'Red Hat Display', system-ui, sans-serif; font-weight: 800; font-size: 17px; letter-spacing: -0.01em; }
+        .wordmark i { font-style: normal; opacity: 0.6; }
+        .wordmark small { font-family: 'Red Hat Text', system-ui, sans-serif; font-weight: 500; font-size: 12px; opacity: 0.85; margin-left: 12px; letter-spacing: 0; }
+        .global select { width: auto; border: 1px solid rgba(255,255,255,0.5); color: #fff; padding: 6px 28px 6px 12px; font-weight: 600;
+            background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6' fill='%23ffffff'/></svg>") no-repeat right 10px center; }
+        .global select:focus { border-color: #fff; outline: 2px solid #fff; outline-offset: 1px; }
+        .global select option { color: var(--ink); }
 
+        .hero-band { background: var(--red); color: #fff; border-top: 1px solid rgba(255,255,255,0.18); }
         .hero {
             display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--gutter);
-            padding: 36px 0 28px; border-bottom: 1px solid var(--rule); align-items: end;
+            padding-top: 44px; padding-bottom: 36px; align-items: end;
         }
         .hero h1 {
             grid-column: span 7;
-            font-family: 'Instrument Serif', Georgia, serif; font-weight: 400;
-            font-size: clamp(40px, 5vw, 68px); line-height: 0.95; letter-spacing: -0.02em;
+            font-family: 'Red Hat Display', system-ui, sans-serif; font-weight: 900;
+            font-size: clamp(38px, 4.6vw, 64px); line-height: 1; letter-spacing: -0.02em;
         }
-        .hero h1 em { color: var(--red); }
-        .hero p { grid-column: 9 / span 4; color: var(--ink-2); max-width: 38ch; }
+        .hero h1 em { font-style: normal; font-weight: 500; }
+        .hero p { grid-column: 9 / span 4; max-width: 38ch; font-size: 15px; color: rgba(255,255,255,0.92); }
 
-        .stats { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--rule); }
-        .stat { padding: 18px 0 16px 20px; border-left: 1px solid var(--hair); }
+        .stats-band { background: var(--red-dark); color: #fff; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); }
+        .stat { padding: 18px 0 16px 20px; border-left: 1px solid rgba(255,255,255,0.22); }
         .stat:first-child { padding-left: 0; border-left: 0; }
         .stat b {
-            display: block; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400;
-            font-size: clamp(30px, 3.4vw, 48px); line-height: 1; letter-spacing: -0.01em;
+            display: block; font-family: 'Red Hat Display', system-ui, sans-serif; font-weight: 800;
+            font-size: clamp(28px, 3vw, 42px); line-height: 1; letter-spacing: -0.02em;
         }
-        .stat span { display: block; margin-top: 6px; font-size: 12px; color: var(--ink-2); }
+        .stat span { display: block; margin-top: 6px; font-size: 12px; color: rgba(255,255,255,0.85); }
         .stat .live::before {
-            content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px;
-            background: var(--red); vertical-align: 1px; animation: blink 2s ease-in-out infinite;
+            content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%;
+            background: #fff; vertical-align: 1px; animation: blink 2s ease-in-out infinite;
         }
         @keyframes blink { 50% { opacity: 0.25; } }
         @media (prefers-reduced-motion: reduce) { .stat .live::before { animation: none; } }
@@ -78,18 +86,19 @@
         /* ── Layout ───────────────────────────────────── */
         .layout {
             display: grid; grid-template-columns: repeat(12, 1fr); gap: 0 var(--gutter);
-            padding-bottom: 96px;
+            padding-top: 24px; padding-bottom: 96px;
         }
         .left  { grid-column: span 4; min-width: 0; }
         .right { grid-column: span 8; min-width: 0; }
 
         .section { padding-top: 20px; margin-bottom: 48px; }
         .section-head {
-            display: flex; align-items: baseline; gap: 14px;
-            padding-bottom: 12px; border-bottom: 1px solid var(--rule); margin-bottom: 4px;
+            display: flex; align-items: baseline; gap: 12px; position: relative;
+            padding-bottom: 12px; border-bottom: 1px solid var(--hair); margin-bottom: 4px;
         }
-        .section-head .num { font-size: 12px; color: var(--ink-3); }
-        .section-head h2 { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 30px; line-height: 1; flex: 1; }
+        .section-head::after { content: ""; position: absolute; left: 0; bottom: -2px; width: 48px; height: 3px; background: var(--red); }
+        .section-head .num { font-family: 'Red Hat Display', system-ui, sans-serif; font-weight: 800; font-size: 13px; color: var(--red); }
+        .section-head h2 { font-family: 'Red Hat Display', system-ui, sans-serif; font-weight: 800; font-size: 24px; line-height: 1.1; letter-spacing: -0.01em; flex: 1; }
         .section-head .aside { font-size: 12px; color: var(--ink-2); }
 
         /* ── Controls ─────────────────────────────────── */
@@ -98,12 +107,12 @@
             border: 0; border-bottom: 1px solid var(--hair); border-radius: 0;
             padding: 10px 0; width: 100%;
         }
-        input[type=text]:focus, select:focus { outline: none; border-bottom-color: var(--ink); }
+        input[type=text]:focus, select:focus { outline: none; border-bottom-color: var(--red); box-shadow: 0 1px 0 var(--red); }
         #search { font-size: 20px; padding: 14px 0; }
         #search::placeholder { color: var(--ink-3); }
         select { appearance: none; cursor: pointer; padding-right: 18px;
             background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6' fill='%23161513'/></svg>") no-repeat right center; }
-        .top select { width: auto; border: 0; padding: 4px 18px 4px 0; font-weight: 500; }
+
 
         button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
         a { color: inherit; }
@@ -113,11 +122,13 @@
 
         .go {
             display: flex; justify-content: space-between; align-items: center; width: 100%;
-            background: var(--ink); color: var(--paper); padding: 18px 20px; font-size: 16px; font-weight: 500;
+            background: var(--red); color: #fff; padding: 16px 20px; font-size: 16px; font-weight: 700;
+            font-family: 'Red Hat Display', system-ui, sans-serif; border-radius: 2px;
         }
-        .go:hover { background: var(--red); }
+        .go:hover { background: var(--red-dark); }
+        .go:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
         .go:disabled { opacity: 0.6; cursor: wait; }
-        .go span:last-child { font-family: 'Instrument Serif', Georgia, serif; font-size: 24px; line-height: 1; }
+        .go span:last-child { font-family: 'Red Hat Display', system-ui, sans-serif; font-weight: 800; font-size: 24px; line-height: 1; }
 
         /* ── Search results / lists ───────────────────── */
         #results { max-height: 62vh; overflow-y: auto; }
@@ -126,7 +137,7 @@
         .code { font-weight: 600; }
         .meta { grid-column: 1 / -1; font-size: 12px; color: var(--ink-2); }
         .gpa { text-align: right; white-space: nowrap; }
-        .gpa b { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 26px; line-height: 1; display: block; }
+        .gpa b { font-family: 'Red Hat Display', system-ui, sans-serif; font-weight: 800; font-size: 21px; line-height: 1; display: block; }
         .gpa .small { color: var(--ink-3); }
         .gpa.hard b { color: var(--red); }
         details { grid-column: 1 / -1; font-size: 13px; color: var(--ink-2); }
@@ -149,10 +160,10 @@
         .toggles label { cursor: pointer; }
         .toggles input { position: absolute; opacity: 0; pointer-events: none; }
         .toggles span { display: inline-block; padding: 5px 10px; border: 1px solid var(--hair); margin: 0 -1px -1px 0; font-size: 13px; }
-        .toggles input:checked + span { background: var(--ink); color: var(--paper); border-color: var(--ink); position: relative; }
+        .toggles input:checked + span { background: var(--red); color: #fff; border-color: var(--red); position: relative; font-weight: 600; }
         .toggles input:focus-visible + span { outline: 2px solid var(--red); outline-offset: 1px; }
         .check { display: flex; gap: 10px; align-items: center; cursor: pointer; }
-        .check input { accent-color: var(--ink); width: 15px; height: 15px; }
+        .check input { accent-color: var(--red); width: 15px; height: 15px; }
         .pref input[type=text] { padding: 6px 0; }
         .inline-form { display: flex; gap: 12px; align-items: center; }
         .inline-form input[type=text] { flex: 1; min-width: 0; }
@@ -167,13 +178,13 @@
         .dars-upload:focus-within .link { outline: 2px solid var(--red); outline-offset: 2px; }
         .dars-summary { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
         .dars-req { display: grid; grid-template-columns: auto 1fr auto; gap: 0 10px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--hair); font-size: 13px; cursor: pointer; }
-        .dars-req input { accent-color: var(--ink); }
+        .dars-req input { accent-color: var(--red); }
         .dars-req .small { grid-column: 2 / -1; }
         .dars-group { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding: 14px 0 4px; }
 
         /* Why these / alternatives */
         .why { margin-top: 28px; }
-        .why h3, .alts h3 { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 22px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+        .why h3, .alts h3 { font-family: 'Red Hat Display', system-ui, sans-serif; font-weight: 800; font-size: 19px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
         .pick { display: grid; grid-template-columns: 10px 1fr auto; gap: 2px 12px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--hair); }
         .pick .dot { align-self: center; }
         .pick .reasons { grid-column: 2 / -1; font-size: 12px; color: var(--ink-2); }
@@ -187,7 +198,7 @@
 
         /* ── Schedule ─────────────────────────────────── */
         .empty { padding: 72px 0; }
-        .empty .serif { font-size: 40px; line-height: 1.05; display: block; margin-bottom: 12px; color: var(--ink-3); }
+        .empty .serif { font-size: 28px; line-height: 1.15; display: block; margin-bottom: 12px; color: var(--ink-3); }
 
         .plans { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--rule); }
         .plan {
@@ -196,7 +207,7 @@
         }
         .plan + .plan { padding-left: 16px; }
         .plan:last-child { border-right: 0; }
-        .plan .letter { font-family: 'Instrument Serif', Georgia, serif; font-size: 64px; line-height: 0.8; color: var(--ink-3); grid-row: span 2; }
+        .plan .letter { font-family: 'Red Hat Display', system-ui, sans-serif; font-weight: 800; font-size: 46px; line-height: 0.85; color: var(--ink-3); grid-row: span 2; }
         .plan.active .letter { color: var(--red); }
         .plan .score { font-size: 13px; }
         .plan .score b { font-weight: 600; }
@@ -242,7 +253,7 @@
         .sem { padding: 14px 16px 18px; border-left: 1px solid var(--hair); min-width: 0; }
         .sem:first-child { border-left: 0; padding-left: 0; }
         .sem-head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 8px; border-bottom: 1px solid var(--hair); }
-        .sem-head b { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 22px; }
+        .sem-head b { font-family: 'Red Hat Display', system-ui, sans-serif; font-weight: 800; font-size: 17px; }
         .sem-head.current b { color: var(--red); }
         .sem-course { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 8px; padding: 8px 0; border-bottom: 1px solid var(--hair); font-size: 13px; }
         .sem-course span.small { flex-basis: 100%; }
@@ -258,20 +269,23 @@
         .spin::after { content: "…"; display: inline-block; animation: dots 1s steps(4) infinite; width: 1.2em; overflow: hidden; vertical-align: bottom; }
         @keyframes dots { from { width: 0; } to { width: 1.2em; } }
 
-        footer { border-top: 1px solid var(--rule); padding: 18px 0 32px; font-size: 12px; color: var(--ink-3); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+        .site-footer { background: #282728; color: #c9c9c9; font-size: 12px; }
+        .site-footer .wrap { padding-top: 28px; padding-bottom: 36px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+        .site-footer b { color: #fff; font-family: 'Red Hat Display', system-ui, sans-serif; font-weight: 800; font-size: 15px; display: block; margin-bottom: 4px; }
 
         @media (max-width: 960px) {
             :root { --gutter: 16px; }
-            .hero { padding: 24px 0 20px; gap: 12px; }
+            .hero { padding-top: 28px; padding-bottom: 22px; gap: 12px; }
+            .wordmark small { display: none; }
             .hero h1, .hero p { grid-column: 1 / -1; }
             .stats { grid-template-columns: repeat(2, 1fr); }
             .roadmap-section { margin-top: 0; }
             .sem { border-left: 0; padding-left: 0; padding-right: 0; }
             .stat { padding: 14px 0 12px 14px; }
-            .stat:nth-child(3) { padding-left: 0; border-left: 0; border-top: 1px solid var(--hair); }
-            .stat:nth-child(4) { border-top: 1px solid var(--hair); }
+            .stat:nth-child(3) { padding-left: 0; border-left: 0; border-top: 1px solid rgba(255,255,255,0.22); }
+            .stat:nth-child(4) { border-top: 1px solid rgba(255,255,255,0.22); }
             .left, .right { grid-column: 1 / -1; }
-            .plan .letter { font-size: 44px; }
+            .plan .letter { font-size: 34px; }
             .plan { padding: 12px 8px 12px 0; grid-template-columns: 1fr; }
             .plan .letter { grid-row: auto; }
             .plan + .plan { padding-left: 10px; }
@@ -279,24 +293,27 @@
     </style>
 </head>
 <body>
-<div class="wrap">
-    <div class="top">
-        <div class="wordmark">uw<i>/</i>schedules</div>
+<header class="global">
+    <div class="wrap global-inner">
+        <div class="wordmark">uw<i>/</i>schedules<small>Unofficial planner for UW–Madison students</small></div>
         <select id="term" aria-label="Term"></select>
     </div>
+</header>
 
-    <div class="hero">
+<section class="hero-band">
+    <div class="wrap hero">
         <h1>Plan your <em>semester.</em></h1>
         <p>Say what you still need and what you're into. You get classes that count, fit your week, and have been graded kindly.</p>
     </div>
-
-    <div class="stats" aria-live="polite">
+    <div class="stats-band"><div class="wrap stats" aria-live="polite">
         <div class="stat"><b id="stat-classes">—</b><span>classes offered <span id="stat-term" style="display:inline;margin:0"></span></span></div>
         <div class="stat"><b id="stat-subjects">—</b><span>subjects</span></div>
         <div class="stat"><b id="stat-breadth">—</b><span>count toward a breadth</span></div>
         <div class="stat"><b id="stat-days">—</b><span class="live" id="stat-days-label">seats live from Course Search &amp; Enroll</span></div>
-    </div>
+    </div></div>
+</section>
 
+<div class="wrap">
     <div class="layout">
         <div class="left">
             <section class="section">
@@ -439,11 +456,14 @@
         <div class="progress" id="progress"></div>
     </section>
 
-    <footer>
-        <span>A personal project. Not affiliated with UW–Madison.</span>
-        <span>Sections from Course Search &amp; Enroll · Grades from Madgrades</span>
-    </footer>
 </div>
+
+<footer class="site-footer">
+    <div class="wrap">
+        <div><b>MadPlan</b>A student's personal project. Not affiliated with or endorsed by the University of Wisconsin–Madison.</div>
+        <div>Sections and seats from Course Search &amp; Enroll<br>Grade distributions from Madgrades</div>
+    </div>
+</footer>
 
 <script>
 const DAYS     = ["Mon", "Tue", "Wed", "Thu", "Fri"];
