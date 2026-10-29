@@ -160,6 +160,17 @@
         #search { margin-top: 8px; }
         .busy-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 0; }
 
+        /* DARS */
+        .dars { padding: 14px 0; border-bottom: 1px solid var(--hair); }
+        .dars-upload { display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
+        .dars-upload input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+        .dars-upload:focus-within .link { outline: 2px solid var(--red); outline-offset: 2px; }
+        .dars-summary { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+        .dars-req { display: grid; grid-template-columns: auto 1fr auto; gap: 0 10px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--hair); font-size: 13px; cursor: pointer; }
+        .dars-req input { accent-color: var(--ink); }
+        .dars-req .small { grid-column: 2 / -1; }
+        .dars-group { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding: 14px 0 4px; }
+
         /* Why these / alternatives */
         .why { margin-top: 28px; }
         .why h3, .alts h3 { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 22px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
@@ -290,6 +301,14 @@
         <div class="left">
             <section class="section">
                 <div class="section-head"><span class="num">01</span><h2>What you need</h2></div>
+                <div class="dars" id="dars">
+                    <label class="dars-upload">
+                        <input type="file" id="dars-file" accept="application/pdf,.pdf">
+                        <span class="link">Upload your DARS</span>
+                        <span class="small faint">PDF export. Read once to find what you have left, never stored on the server.</span>
+                    </label>
+                </div>
+                <div id="dars-reqs"></div>
                 <div id="reqs"></div>
                 <div class="pref">
                     <label for="req-add">Requirement</label>
@@ -444,6 +463,7 @@ const state = {
     lastResult: null,
     colorOrder: [],  // course names in the order they get colors
     roadmap: {},     // {termCode: [course summaries]}
+    dars: null,      // {program, year, taken: [names], requirements: [{..spec, on}]}
 };
 
 // ── Helpers ─────────────────────────────────────────────────
@@ -481,6 +501,7 @@ function save() {
     try {
         localStorage.setItem("madplan", JSON.stringify({
             term: state.term, mine: state.mine, busy: state.busy, reqs: state.reqs, roadmap: state.roadmap,
+            dars: state.dars,
             prefs: readPrefs(), needs: readNeeds(),
         }));
     } catch (e) { /* storage unavailable — fine, just won't persist */ }
@@ -574,7 +595,7 @@ function readNeeds() {
 function renderReqs() {
     const box = $("#reqs");
     if (!state.reqs.length) {
-        box.innerHTML = `<p class="status">Pick the requirements you still have left. Your DARS lists them.</p>`;
+        box.innerHTML = state.dars ? "" : `<p class="status">Or add requirements by hand.</p>`;
         return;
     }
     box.innerHTML = state.reqs.map((r, i) => `
@@ -622,6 +643,95 @@ async function addSubjectReq() {
 }
 $("#req-subject-add").addEventListener("click", addSubjectReq);
 $("#req-subject").addEventListener("keydown", (e) => { if (e.key === "Enter") addSubjectReq(); });
+
+// ── DARS ────────────────────────────────────────────────────
+
+async function onDarsFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    $("#dars").innerHTML = `<p class="status spin">Reading your DARS</p>`;
+    const form = new FormData();
+    form.append("file", file);
+    let res;
+    try {
+        res = await fetch("/api/dars", { method: "POST", body: form }).then(r => r.json());
+    } catch (err) {
+        res = { error: "Couldn't reach the server." };
+    }
+    if (res.error) {
+        renderDars(res.error);
+        return;
+    }
+    // Keep only what planning needs: course names, not grades
+    const firstMajor = res.requirements.findIndex(r => !/general education|breadth/i.test(r.group));
+    state.dars = {
+        program: res.program,
+        year: res.year,
+        taken: res.taken.map(c => c.name),
+        requirements: res.requirements.map((r, i) => ({
+            ...r,
+            // Start with the university gen eds plus the first open major requirement switched on
+            on: /general education/i.test(r.group) || i === firstMajor,
+        })),
+    };
+    if (res.year) document.querySelector(`input[name=standing][value="${Math.min(4, res.year)}"]`).checked = true;
+    renderDars();
+    renderProgress();
+    save();
+}
+
+$("#dars-file").addEventListener("change", onDarsFile);
+
+function renderDars(error) {
+    const box = $("#dars");
+    const d = state.dars;
+    if (!d) {
+        box.innerHTML = `
+            <label class="dars-upload">
+                <input type="file" id="dars-file" accept="application/pdf,.pdf">
+                <span class="link">Upload your DARS</span>
+                <span class="small ${error ? "closed" : "faint"}">${error ? esc(error) : "PDF export. Read once to find what you have left, never stored on the server."}</span>
+            </label>`;
+        $("#dars-reqs").innerHTML = "";
+        // The input was re-created, so re-attach the upload handler
+        box.querySelector("#dars-file").addEventListener("change", onDarsFile);
+        $("#pref-prereqs").disabled = false;
+        $("#pref-prereqs").parentElement.lastChild.textContent = " Only suggest classes with no course prereqs";
+        return;
+    }
+    box.innerHTML = `
+        <div class="dars-summary">
+            <div><span class="code">${esc(d.program || "Your DARS")}</span>
+                 <div class="small muted">Year ${d.year || "?"} · ${d.taken.length} courses on record · ${d.requirements.length} requirements left</div></div>
+            <button class="link small" id="dars-clear">Remove</button>
+        </div>`;
+    $("#dars-clear").addEventListener("click", () => {
+        state.dars = null;
+        renderDars();
+        renderProgress();
+        save();
+    });
+    $("#pref-prereqs").checked = true;
+    $("#pref-prereqs").disabled = true;
+    $("#pref-prereqs").parentElement.lastChild.textContent = " Checked against your DARS";
+
+    let group = null;
+    $("#dars-reqs").innerHTML = `<p class="status">Tick what you want to work on this semester.</p>` + d.requirements.map((r, i) => {
+        const head = r.group !== group ? `<div class="dars-group">${esc(r.group)}</div>` : "";
+        group = r.group;
+        return `${head}
+            <label class="dars-req">
+                <input type="checkbox" data-dars-i="${i}" ${r.on ? "checked" : ""}>
+                <span class="code">${esc(r.label)}</span>
+                <span class="small muted">${esc(r.needs)}</span>
+                ${r.kind === "list" ? `<span class="small faint">${esc(r.courses.slice(0, 6).join(", "))}${r.courses.length > 6 ? ` +${r.courses.length - 6} more` : ""}</span>` : ""}
+            </label>`;
+    }).join("");
+    $("#dars-reqs").querySelectorAll("[data-dars-i]").forEach(cb => cb.addEventListener("change", () => {
+        d.requirements[+cb.dataset.darsI].on = cb.checked;
+        save();
+    }));
+}
 
 // ── Search ──────────────────────────────────────────────────
 
@@ -809,9 +919,13 @@ $("#add-busy").addEventListener("click", () => {
 
 // ── Build schedules ─────────────────────────────────────────
 
+function darsSpecs() {
+    return state.dars ? state.dars.requirements.filter(r => r.on) : [];
+}
+
 async function makeSchedules() {
     const out = $("#output");
-    const filling = state.reqs.length > 0;
+    const filling = state.reqs.length + darsSpecs().length > 0;
     if (!filling && !state.mine.length) {
         out.innerHTML = `<div class="empty"><span class="serif">Nothing to plan yet.</span><span class="muted">Add a requirement you still need, or a must-have course.</span></div>`;
         return;
@@ -834,7 +948,10 @@ async function makeSchedules() {
         blocked: state.busy,
     };
     if (filling) Object.assign(body, {
-        requirements:   state.reqs,
+        requirements:   [...state.reqs, ...darsSpecs()],
+        completed:      state.dars ? state.dars.taken : undefined,
+        bonus_requirements: state.dars ? state.dars.requirements.filter(r => !r.on) : [],
+        programs:       state.dars && state.dars.program ? [state.dars.program] : [],
         interests:      needs.interests.split(",").map(s => s.trim()).filter(Boolean),
         priority:       needs.priority,
         standing:       needs.standing,
@@ -1101,6 +1218,7 @@ const REQ_MATCH = {
 };
 
 function reqMatches(req, c) {
+    if (req.kind === "list") return (req.courses || []).includes(c.name);
     if (req.kind === "subject") {
         return c.subject_code === req.code && (parseInt(c.catalog_number) || 0) >= (req.min || 0);
     }
@@ -1193,14 +1311,21 @@ function addToRoadmap(termCode, courses) {
 }
 
 function renderProgress() {
-    if (!state.reqs.length) { $("#progress").innerHTML = ""; return; }
+    const reqs = [...state.reqs, ...(state.dars ? state.dars.requirements : [])];
+    if (!reqs.length) { $("#progress").innerHTML = ""; return; }
     const terms = roadmapTerms();
-    $("#progress").innerHTML = state.reqs.map(r => {
+    $("#progress").innerHTML = reqs.map(r => {
+        const need = r.count || 1;
+        const hits = [];
         for (const t of terms) {
-            const c = (state.roadmap[t.code] || []).find(c => reqMatches(r, c));
-            if (c) return `<div><span>${esc(r.label)}</span><span class="muted">${esc(c.name)} · ${esc(t.name)}</span></div>`;
+            for (const c of state.roadmap[t.code] || []) {
+                if (hits.length < need && reqMatches(r, c)) hits.push(`${c.name} · ${t.name}`);
+            }
         }
-        return `<div><span>${esc(r.label)}</span><span class="open-req">still open</span></div>`;
+        const status = hits.length >= need
+            ? `<span class="muted">${hits.map(esc).join(", ")}</span>`
+            : `<span class="open-req">${need > 1 ? `${hits.length} of ${need}` : "still open"}</span>`;
+        return `<div><span>${esc(r.label)}</span>${status}</div>`;
     }).join("");
 }
 
@@ -1318,6 +1443,8 @@ function downloadIcs() {
     const saved = load();
     state.mine = saved.mine || [];
     state.roadmap = saved.roadmap || {};
+    state.dars = saved.dars || null;
+    if (state.dars) renderDars();
     initPrefs(saved);
     renderMine();
     try {

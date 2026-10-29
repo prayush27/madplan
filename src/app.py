@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from flask import Flask, jsonify, render_template, request
 
+import dars
 import madgrades
 import suggest
 import uw_api
@@ -139,6 +140,27 @@ def schedules():
     )
 
 
+@app.route("/api/dars", methods=["POST"])
+def upload_dars():
+    """
+    Parses an uploaded DARS PDF in memory (never written to disk) and returns only planning data:
+    program, year, courses taken, and unmet requirements.
+    """
+    upload = request.files.get("file")
+    if not upload:
+        return jsonify(error="No file uploaded."), 400
+    data = upload.read(10 * 1024 * 1024 + 1)
+    if len(data) > 10 * 1024 * 1024:
+        return jsonify(error="That file is too big to be a DARS report."), 400
+    try:
+        parsed = dars.parse_pdf(data)
+    except Exception:
+        return jsonify(error="Couldn't read that PDF. Export your DARS as a PDF and try again."), 400
+    if not parsed["taken"] and not parsed["requirements"]:
+        return jsonify(error="That doesn't look like a DARS report."), 400
+    return jsonify(parsed)
+
+
 @app.route("/api/requirements")
 def requirement_kinds():
     return jsonify([{"kind": k, "label": v[0]} for k, v in suggest.REQUIREMENT_KINDS.items()])
@@ -164,6 +186,9 @@ def fill():
         priority=body.get("priority") or "balanced",
         skip_prereqs=body.get("skip_prereqs", True),
         standing=int(body.get("standing") or 0) or None,
+        completed=body.get("completed"),
+        programs=body.get("programs") or [],
+        bonus_specs=body.get("bonus_requirements") or [],
     )
     if "error" in result:
         return jsonify(error=result["error"]), 400

@@ -5,6 +5,7 @@
 import re
 from concurrent.futures import ThreadPoolExecutor
 
+import dars
 import madgrades
 import uw_api
 from constraints import has_time_conflict
@@ -53,17 +54,35 @@ REQUIREMENT_KINDS = {
 
 
 class Requirement:
-    def __init__(self, label, filters, match):
+    def __init__(self, label, filters, match, courses=None, count=1, group=None):
         self.label   = label
         self.filters = filters
         self.match   = match
+        self.courses = courses   # explicit course names (DARS "SELECT FROM: MATH 320 OR 340 ...")
+        self.count   = count     # how many courses it still needs
+        self.group   = group     # a course counts once per group (e.g. once within the major)
 
 
 def build_requirement(term, spec):
     """
-    spec: {"kind": "humanities"} or {"kind": "subject", "subject": "cs", "min": 300}
+    spec: {"kind": "humanities"}, {"kind": "subject", "subject": "cs", "min": 300},
+          or {"kind": "list", "courses": ["MATH 320", ...]}
+          plus optional "label", "count" and "group" (set when the spec comes from DARS)
     Returns a Requirement, or None if the spec doesn't make sense for this term.
     """
+    req = _build(term, spec)
+    if req:
+        req.label = spec.get("label") or req.label
+        req.count = max(1, int(spec.get("count") or 1))
+        req.group = spec.get("group")
+    return req
+
+
+def _build(term, spec):
+    if spec.get("kind") == "list":
+        names = [n.upper() for n in spec.get("courses", [])][:60]
+        return Requirement("One of a list", [], lambda c: c['name'] in names, courses=names) if names else None
+
     if spec.get("kind") == "subject":
         code, _ = uw_api.resolve_query(term, spec.get("subject", ""))
         if not code:
@@ -132,6 +151,26 @@ def course_quality(course, grades, interest_hit, covers, priority):
     return round(score + 12 * max(0, covers - 1) - _level_penalty(course))
 
 
+def allocate(reqs, courses, only=None):
+    """
+    How many of `courses` count toward each requirement, DARS-style: a course can count toward
+    requirements in different groups, but only once within a group (e.g. once inside the major).
+    Returns {requirement index: count}.
+    """
+    counts, used = {}, set()
+    for i, r in enumerate(reqs):
+        if only is not None and i not in only:
+            continue
+        for c in courses:
+            key = (r.group, c['name']) if r.group else None
+            if counts.get(i, 0) >= r.count or not r.match(c) or (key and key in used):
+                continue
+            counts[i] = counts.get(i, 0) + 1
+            if key:
+                used.add(key)
+    return counts
+
+
 def _load(course, term):
     try:
         return uw_api.load_course_entry({**course, "term": term})
@@ -145,13 +184,18 @@ def _fits_any(options, base_schedules):
 
 
 def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_credits=None,
-         interests=(), priority="balanced", skip_prereqs=True, standing=None):
+         interests=(), priority="balanced", skip_prereqs=True, standing=None, completed=None,
+         programs=(), bonus_specs=()):
     """
-    must:  course summaries the student is definitely taking
-    specs: requirement specs (see build_requirement)
+    must:      course summaries the student is definitely taking
+    specs:     requirement specs (see build_requirement)
+    completed: course names already taken or in progress (from DARS); when given, prerequisites
+               are checked against it instead of skipping every course that has one
+    bonus_specs: other open requirements not asked for this term; extra credits go toward these first
     Returns a dict with plans, per-requirement alternatives and anything that couldn't be filled.
     """
-    reqs = [r for r in (build_requirement(term, s) for s in specs) if r]
+    reqs  = [r for r in (build_requirement(term, s) for s in specs) if r]
+    bonus = [r for r in (build_requirement(term, s) for s in bonus_specs) if r] if target_credits else []
     interests = [i.strip() for i in interests if i.strip()][:4]
 
     # 1. Best arrangements of the must-haves — suggestions have to fit around one of these
@@ -167,11 +211,16 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
     else:
         base = [[]]
 
-    # Requirements a must-have already covers don't need another course
-    covered_by = {i: next((c['name'] for c in must if r.match(c)), None) for i, r in enumerate(reqs)}
+    completed = [c.upper() for c in completed] if completed is not None else None
+
+    # Must-haves count toward requirements first; covered_by names the one that finished a requirement
+    must_alloc = allocate(reqs, must)
+    need       = {i: max(0, r.count - must_alloc.get(i, 0)) for i, r in enumerate(reqs)}
+    covered_by = {i: (next((c['name'] for c in must if r.match(c)), None) if not need[i] else None)
+                  for i, r in enumerate(reqs)}
 
     # 2. Candidate courses from the catalog
-    taken    = {c['name'] for c in must} | {c['course_id'] for c in must}
+    taken    = {c['name'] for c in must} | {c['course_id'] for c in must} | set(completed or [])
     catalog  = {}
     interest_of = {}
 
@@ -179,7 +228,10 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
         for c in hits:
             if c['name'] in taken or c['course_id'] in taken or not c['min_credits']:
                 continue
-            if skip_prereqs and needs_prereqs(c):
+            if completed is not None:
+                if not dars.prereqs_met(c.get('prerequisites'), completed, standing, programs):
+                    continue
+            elif skip_prereqs and needs_prereqs(c):
                 continue
             if not is_real_class(c) or not eligible(c, standing):
                 continue
@@ -197,10 +249,16 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
     for i, r in enumerate(reqs):
         if covered_by[i]:
             continue
+        if r.courses:
+            # Explicit list: look each course up directly instead of searching a category
+            searches += [([], name, 5, None) for name in r.courses]
+            continue
         searches.append((r.filters, "", POOL_SIZE, None))
         searches += [(r.filters, word, 60, word) for word in interests]
     if target_credits:
         searches += [([], word, 80, word) for word in interests]
+    for r in bonus:
+        searches += [([], name, 5, None) for name in r.courses] if r.courses else [(r.filters, "", 150, None)]
     results = pool.map(lambda a: uw_api.search_courses(term, a[1], filters=a[0] + [UNDERGRAD],
                                                        page_size=a[2])[1], searches)
     for (_, _, _, word), hits in zip(searches, results):
@@ -217,6 +275,8 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
     for i, r in enumerate(reqs):
         if not covered_by[i]:
             names |= set(sorted((n for n in catalog if r.match(catalog[n])), key=promise, reverse=True)[:PREFETCH])
+    for r in bonus:
+        names |= set(sorted((n for n in catalog if r.match(catalog[n])), key=promise, reverse=True)[:PREFETCH // 3])
     names = list(names)
 
     # 3. Live sections; keep courses with an open section that fits around the must-haves
@@ -234,7 +294,7 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
                   for i in range(len(reqs)) if not covered_by[i]}
     unfilled   = [reqs[i].label for i, c in candidates.items() if not c]
 
-    # 5. Combine: one course per open requirement (a course can cover several), all fitting together
+    # 5. Combine: enough courses for each open requirement (a course can cover several), all fitting together
     checks = [0]
 
     def feasible(chosen):
@@ -243,24 +303,28 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
                                        include_closed, blocked, limit=1))
 
     order = sorted((i for i, c in candidates.items() if c), key=lambda i: len(candidates[i]))
+    covered_idx = set(order)
     sets  = []
 
-    def search(k, chosen):
+    def search(k, chosen, start=0):
         if len(sets) >= MAX_SETS or checks[0] >= CHECK_LIMIT:
             return
         if k == len(order):
             sets.append(list(chosen))
             return
         i = order[k]
-        if any(i in covers[n] for n in chosen):
+        if allocate(reqs, [catalog[n] for n in chosen], only=covered_idx).get(i, 0) >= need[i]:
             search(k + 1, chosen)
             return
-        for n in candidates[i][:BRANCH]:
+        # Courses for one requirement are tried in rank order (start) so {A, B} isn't also tried as {B, A}
+        pool_i = candidates[i][:BRANCH + need[i] - 1]
+        for j in range(start, len(pool_i)):
+            n = pool_i[j]
             if n in chosen:
                 continue
             chosen.append(n)
             if feasible(chosen):
-                search(k + 1, chosen)
+                search(k, chosen, j + 1)
             chosen.pop()
 
     search(0, [])
@@ -268,10 +332,11 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
         # Nothing covers everything at once — fill as many requirements as possible instead
         best = []
         for i in order:
-            for n in candidates[i][:BRANCH]:
+            for n in candidates[i][:BRANCH + need[i]]:
+                if allocate(reqs, [catalog[x] for x in best], only=covered_idx).get(i, 0) >= need[i]:
+                    break
                 if n not in best and feasible(best + [n]):
                     best.append(n)
-                    break
         sets = [best]
 
     # 6. Top up to the credit target with the best remaining courses
@@ -281,8 +346,14 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
         credits = must_credits + sum(catalog[n]['min_credits'] for n in chosen)
         if not target_credits:
             return chosen
+        # Prefer courses that also knock out another open requirement, then interest, then quality
+        bonus_have = allocate(bonus, [catalog[n] for n in chosen] + list(must))
+
+        def bonus_gain(n):
+            return sum(1 for j, r in enumerate(bonus) if bonus_have.get(j, 0) < r.count and r.match(catalog[n]))
+
         extras = sorted((n for n in fits if n not in chosen),
-                        key=lambda n: (n in interest_of, quality[n]), reverse=True)
+                        key=lambda n: (bonus_gain(n) > 0, n in interest_of, quality[n]), reverse=True)
         # First pass only takes full-size courses; second pass closes any small gap left
         for min_size in (3, 1):
             for n in extras[:40]:
@@ -315,7 +386,9 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
             "notes":    notes,
             "credits":  must_credits + sum(catalog[n]['min_credits'] for n in chosen),
             "schedule": schedule,
-            "picks":    [_explain(catalog[n], grades[n], [reqs[i].label for i in covers[n]],
+            "picks":    [_explain(catalog[n], grades[n],
+                                  [reqs[i].label for i in covers[n]] +
+                                  [r.label for r in bonus if r.match(catalog[n])],
                                   interest_of.get(n), online=n not in on_calendar) for n in chosen],
         })
     plans.sort(key=lambda p: -p['score'])
