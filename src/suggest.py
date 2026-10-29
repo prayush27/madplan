@@ -20,6 +20,7 @@ PREFETCH    = 90    # of those, how many get live sections + grades looked up
 BRANCH      = 8     # best candidates tried per requirement when combining
 MAX_SETS    = 40    # complete course combinations to collect before ranking
 CHECK_LIMIT = 800   # cap on fit checks so a hard request can't hang the server
+MAX_CREDITS = 18    # UW's normal per-term limit without a dean's approval
 
 
 def _any(field, codes):
@@ -185,13 +186,14 @@ def _fits_any(options, base_schedules):
 
 def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_credits=None,
          interests=(), priority="balanced", skip_prereqs=True, standing=None, completed=None,
-         programs=(), bonus_specs=()):
+         programs=(), bonus_specs=(), max_credits=MAX_CREDITS):
     """
     must:      course summaries the student is definitely taking
     specs:     requirement specs (see build_requirement)
     completed: course names already taken or in progress (from DARS); when given, prerequisites
                are checked against it instead of skipping every course that has one
     bonus_specs: other open requirements not asked for this term; extra credits go toward these first
+    max_credits: no plan goes over this; requirements that don't fit under it are left for later terms
     Returns a dict with plans, per-requirement alternatives and anything that couldn't be filled.
     """
     reqs  = [r for r in (build_requirement(term, s) for s in specs) if r]
@@ -212,6 +214,12 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
         base = [[]]
 
     completed = [c.upper() for c in completed] if completed is not None else None
+
+    max_credits  = max(1, min(MAX_CREDITS, int(max_credits or MAX_CREDITS)))
+    target_credits = min(target_credits, max_credits) if target_credits else None
+    must_credits = sum(c['min_credits'] for c in must)
+    if must_credits > max_credits:
+        return {"error": f"Your must-haves are already {must_credits:g} credits, over your max of {max_credits}."}
 
     # Must-haves count toward requirements first; covered_by names the one that finished a requirement
     must_alloc = allocate(reqs, must)
@@ -302,9 +310,13 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
         return bool(generate_schedules(must_entries + [entries[n] for n in chosen],
                                        include_closed, blocked, limit=1))
 
+    def credits(chosen):
+        return must_credits + sum(catalog[n]['min_credits'] for n in chosen)
+
     order = sorted((i for i, c in candidates.items() if c), key=lambda i: len(candidates[i]))
     covered_idx = set(order)
     sets  = []
+    over_cap = []
 
     def search(k, chosen, start=0):
         if len(sets) >= MAX_SETS or checks[0] >= CHECK_LIMIT:
@@ -323,24 +335,33 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
             if n in chosen:
                 continue
             chosen.append(n)
-            if feasible(chosen):
+            if credits(chosen) > max_credits:
+                checks[0] += 1    # count these too, so an impossible cap can't search forever
+            elif feasible(chosen):
                 search(k, chosen, j + 1)
             chosen.pop()
 
     search(0, [])
     if not sets and order:
-        # Nothing covers everything at once — fill as many requirements as possible instead
+        # Nothing covers everything at once — fill as many requirements as possible instead,
+        # in the order the student listed them, without going over the credit cap
         best = []
-        for i in order:
+        for i in sorted(order):
+            hit_cap = False
             for n in candidates[i][:BRANCH + need[i]]:
                 if allocate(reqs, [catalog[x] for x in best], only=covered_idx).get(i, 0) >= need[i]:
                     break
-                if n not in best and feasible(best + [n]):
+                if n in best:
+                    continue
+                if credits(best + [n]) > max_credits:
+                    hit_cap = True
+                elif feasible(best + [n]):
                     best.append(n)
+            if hit_cap and allocate(reqs, [catalog[x] for x in best], only=covered_idx).get(i, 0) < need[i]:
+                over_cap.append(reqs[i].label)
         sets = [best]
 
     # 6. Top up to the credit target with the best remaining courses
-    must_credits = sum(c['min_credits'] for c in must)
 
     def top_up(chosen):
         credits = must_credits + sum(catalog[n]['min_credits'] for n in chosen)
@@ -362,7 +383,7 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
                 c = catalog[n]['min_credits']
                 if n in chosen or c < min(min_size, target_credits - credits):
                     continue
-                if credits + c <= target_credits + 1 and feasible(chosen + [n]):
+                if credits + c <= min(target_credits + 1, max_credits) and feasible(chosen + [n]):
                     chosen, credits = chosen + [n], credits + c
         return chosen
 
@@ -404,6 +425,8 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
         "alternatives": alternatives,
         "covered":      [{"label": reqs[i].label, "by": name} for i, name in covered_by.items() if name],
         "unfilled":     unfilled,
+        "over_cap":     over_cap,
+        "max_credits":  max_credits,
         "checked":      len(catalog),
         "fitting":      len(fits),
         "grades":       {n: grades[n] for n in fits},

@@ -189,6 +189,7 @@ def fill():
         completed=body.get("completed"),
         programs=body.get("programs") or [],
         bonus_specs=body.get("bonus_requirements") or [],
+        max_credits=int(body.get("max_credits") or 0) or suggest.MAX_CREDITS,
     )
     if "error" in result:
         return jsonify(error=result["error"]), 400
@@ -212,6 +213,8 @@ def fill():
         alternatives=result["alternatives"],
         covered=result["covered"],
         unfilled=result["unfilled"],
+        over_cap=result["over_cap"],
+        max_credits=result["max_credits"],
         checked=result["checked"],
         fitting=result["fitting"],
     )

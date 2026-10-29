@@ -427,6 +427,18 @@
                         <option value="18">18 credits</option>
                     </select>
                 </div>
+                <div class="pref">
+                    <label for="max-credits">At most</label>
+                    <select id="max-credits">
+                        <option value="12">12 credits</option>
+                        <option value="13">13 credits</option>
+                        <option value="14">14 credits</option>
+                        <option value="15">15 credits</option>
+                        <option value="16">16 credits</option>
+                        <option value="17">17 credits</option>
+                        <option value="18" selected>18 credits</option>
+                    </select>
+                </div>
             </section>
 
             <section class="section reveal">
@@ -671,10 +683,18 @@ async function initNeeds(saved) {
     if (n.priority) document.querySelector(`input[name=priority][value=${n.priority}]`).checked = true;
     if (n.standing) document.querySelector(`input[name=standing][value="${n.standing}"]`).checked = true;
     if (n.target) $("#target").value = n.target;
+    if (n.max) $("#max-credits").value = n.max;
     renderReqs();
 
-    document.querySelectorAll("#interests, input[name=priority], input[name=standing], #target")
+    document.querySelectorAll("#interests, input[name=priority], input[name=standing], #target, #max-credits")
         .forEach(el => el.addEventListener("change", save));
+    // Keep "fill to" from going past "at most", whichever one changed
+    $("#target").addEventListener("change", () => {
+        if (+$("#target").value > +$("#max-credits").value) $("#max-credits").value = $("#target").value;
+    });
+    $("#max-credits").addEventListener("change", () => {
+        if (+$("#target").value > +$("#max-credits").value) $("#target").value = $("#max-credits").value;
+    });
 
     state.kinds = await fetch("/api/requirements").then(r => r.json());
     $("#req-add").innerHTML = `<option value="">Add one…</option>` +
@@ -687,6 +707,7 @@ function readNeeds() {
         priority:  document.querySelector("input[name=priority]:checked").value,
         standing:  +document.querySelector("input[name=standing]:checked").value,
         target:    +$("#target").value,
+        max:       +$("#max-credits").value,
     };
 }
 
@@ -1086,6 +1107,7 @@ async function makeSchedules() {
         priority:       needs.priority,
         standing:       needs.standing,
         target_credits: needs.target,
+        max_credits:    needs.max,
         skip_prereqs:   prefs.skip_prereqs,
     });
 
@@ -1130,6 +1152,9 @@ function renderOutput() {
     }
     for (const c of res.covered || []) {
         alerts += `<div class="note-line">${esc(c.label)} is already covered by <b>${esc(c.by)}</b>.</div>`;
+    }
+    if ((res.over_cap || []).length) {
+        alerts += `<div class="note-line bad"><b>${res.over_cap.map(esc).join(", ")}</b> didn't fit under your ${res.max_credits}-credit max. Save ${res.over_cap.length > 1 ? "them" : "it"} for another term, or untick something else.</div>`;
     }
     for (const label of res.unfilled || []) {
         alerts += `<div class="note-line bad">Nothing open for <b>${esc(label)}</b> fits around your must-haves and busy times.</div>`;
