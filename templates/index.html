@@ -319,6 +319,10 @@
             .section-head::after { width: 48px; }
         }
 
+        .reset { margin-top: 14px; font-size: 12px; text-align: center; color: var(--ink-2); }
+        .reset .link { color: var(--ink-3); }
+        .reset .link.danger { color: var(--red); font-weight: 700; }
+
         .spin::after { content: "…"; display: inline-block; animation: dots 1s steps(4) infinite; width: 1.2em; overflow: hidden; vertical-align: bottom; }
         @keyframes dots { from { width: 0; } to { width: 1.2em; } }
 
@@ -494,6 +498,9 @@
             </section>
 
             <button class="go" id="generate"><span>Make schedules</span><span>→</span></button>
+            <div class="reset" id="reset">
+                <button class="link small muted" id="reset-ask">Clear everything</button>
+            </div>
         </div>
 
         <div class="right">
@@ -591,6 +598,27 @@ function load() {
     try { return JSON.parse(localStorage.getItem("madplan")) || {}; }
     catch (e) { return {}; }
 }
+
+// ── Clear everything ────────────────────────────────────────
+// Wipes the DARS, requirements, must-haves, busy times and preferences back to defaults.
+// The term and the roadmap stay, since those are plans for other semesters.
+
+$("#reset").addEventListener("click", (e) => {
+    const box = $("#reset");
+    if (e.target.id === "reset-ask") {
+        box.innerHTML = `Clear your DARS, requirements, must-haves and preferences?
+            <button class="link small danger" id="reset-yes">Yes, clear</button> ·
+            <button class="link small" id="reset-no">Cancel</button>`;
+    } else if (e.target.id === "reset-yes") {
+        try {
+            const kept = load();
+            localStorage.setItem("madplan", JSON.stringify({ term: kept.term, roadmap: kept.roadmap }));
+        } catch (err) { /* nothing saved to clear */ }
+        location.replace(location.pathname);   // reload with the form at its defaults
+    } else if (e.target.id === "reset-no") {
+        box.innerHTML = `<button class="link small muted" id="reset-ask">Clear everything</button>`;
+    }
+});
 
 // ── Motion ──────────────────────────────────────────────────
 
