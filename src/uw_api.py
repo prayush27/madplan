@@ -5,6 +5,7 @@
 import hashlib
 import json
 import os
+import re
 import time
 import urllib.request
 from datetime import datetime, timezone
@@ -65,6 +66,16 @@ def _fetch(url, body=None, ttl=TTL_CATALOG):
     return result
 
 
+# Nicknames students actually type, beyond the official abbreviations
+SUBJECT_NICKNAMES = {
+    "cs": "COMP SCI", "ee": "E C E", "ie": "I SY E", "cee": "CIV ENGR", "nuke": "N E",
+    "bio": "BIOLOGY", "biochem": "BIOCHEM", "stats": "STAT", "phys": "PHYSICS", "astro": "ASTRON",
+    "hist": "HISTORY", "phil": "PHILOS", "philo": "PHILOS", "span": "SPANISH", "kin": "KINES",
+    "nutri": "NUTR SCI", "fin": "FINANCE", "mktg": "MARKETNG", "acct": "ACCT I S",
+    "comm": "COM ARTS", "ling": "LINGUIS", "anthro": "ANTHRO", "geo": "GEOG", "journalism": "JOURN",
+}
+
+
 # ── Terms + search ───────────────────────────────────────────
 
 def get_terms():
@@ -94,22 +105,63 @@ def default_term():
     return get_terms()[-1]['code']
 
 
+def _squash(text):
+    return re.sub(r'[^a-z]', '', text.lower())
+
+
+def subject_index(term):
+    """Maps squashed subject names and nicknames to subject codes, e.g. {'compsci': '266', 'cs': '266', 'ece': '...'}."""
+    subjects = _fetch(f"{BASE_URL}/subjectsMap/{term}")   # {"266": "COMP SCI", ...}
+    by_name  = {name: code for code, name in subjects.items()}
+    index    = {_squash(name): code for code, name in subjects.items()}
+    for nick, name in SUBJECT_NICKNAMES.items():
+        if name in by_name:
+            index.setdefault(nick, by_name[name])
+    return index
+
+
+def resolve_query(term, query):
+    """
+    Turns shorthand like 'cs400', 'compsci 400' or 'ece' into an exact UW search.
+    Returns (subject_code, catalog_number) — either may be None if the query isn't shorthand.
+    """
+    m = re.fullmatch(r'\s*([A-Za-z&\s]+?)\s*(\d{2,3})?\s*', query)
+    if not m:
+        return None, None
+    code = subject_index(term).get(_squash(m.group(1)))
+    return (code, m.group(2)) if code else (None, None)
+
+
 def search_courses(term, query="", filters=None, page=1, page_size=50):
     """
-    Searches the course catalog for a term.
+    Searches the course catalog for a term. Understands shorthand like 'cs400' or 'math 222'.
     filters: raw Elasticsearch-style filters understood by the UW API (optional)
     Returns (total_found, [course summary dicts]).
     """
-    body = {
-        "selectedTerm": term,
-        "queryString":  query or "*",
-        "filters":      filters or [],
-        "page":         page,
-        "pageSize":     page_size,
-        "sortOrder":    "SCORE" if query else "SUBJECT",
-    }
-    data = _fetch(BASE_URL, body=body)
-    return data.get('found', 0), [summarize_course(h) for h in data.get('hits', [])]
+    def run(query_string, extra_filters, sort):
+        body = {
+            "selectedTerm": term,
+            "queryString":  query_string,
+            "filters":      (filters or []) + extra_filters,
+            "page":         page,
+            "pageSize":     page_size,
+            "sortOrder":    sort,
+        }
+        data = _fetch(BASE_URL, body=body)
+        return data.get('found', 0), [summarize_course(h) for h in data.get('hits', [])]
+
+    subject_code, number = resolve_query(term, query) if query else (None, None)
+    if subject_code:
+        subject_filter = [{"term": {"subject.subjectCode": subject_code}}]
+        if number:
+            found, hits = run("*", subject_filter + [{"term": {"catalogNumber": number}}], "SCORE")
+            if found:
+                return found, hits
+            # Not offered this term under that exact number — show nearby courses in the subject
+            return run(number, subject_filter, "SCORE")
+        return run("*", subject_filter, "SUBJECT")
+
+    return run(query or "*", [], "SCORE" if query else "SUBJECT")
 
 
 def summarize_course(hit):
