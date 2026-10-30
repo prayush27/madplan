@@ -374,6 +374,8 @@
             .section-head::after { width: 48px; }
         }
 
+        .rmp { font-size: 11px; font-weight: 700; color: var(--ink-3); margin-left: 6px; text-decoration: underline; text-underline-offset: 2px; }
+        .rmp:hover { color: var(--red); }
         .reset { margin-top: 14px; font-size: 12px; text-align: center; color: var(--ink-2); }
         .reset .link { color: var(--ink-3); }
         .reset .link.danger { color: var(--red); font-weight: 700; }
@@ -1570,10 +1572,16 @@ function calendar(plan) {
         </div>`;
 }
 
+// Rate My Professors search for an instructor, limited to UW–Madison (school 18418)
+function rmpLink(name) {
+    return `https://www.ratemyprofessors.com/search/professors/18418?q=${encodeURIComponent(name)}`;
+}
+
 function sectionTable(plan) {
     const rows = plan.sections.map(s => {
         const inst = s.instructors.map(i =>
-            `${esc(i.name)}${i.grades ? ` <span class="${i.grades.gpa < 3 ? "closed" : "faint"}">${i.grades.gpa.toFixed(2)}</span>` : ""}`).join("<br>") || `<span class="faint">TBA</span>`;
+            `${esc(i.name)}${i.grades ? ` <span class="${i.grades.gpa < 3 ? "closed" : "faint"}">${i.grades.gpa.toFixed(2)}</span>` : ""}
+             <a class="rmp" href="${rmpLink(i.name)}" target="_blank" rel="noopener" title="Search Rate My Professors for ${esc(i.name)}">RMP</a>`).join("<br>") || `<span class="faint">TBA</span>`;
         let seats = "";
         if (s.status === "OPEN") seats = `<span class="open">${s.open_seats ?? "?"} open</span>`;
         else if (s.status) seats = `<span class="${s.status.toLowerCase()}">${s.status.toLowerCase()}</span>`;
@@ -1592,7 +1600,7 @@ function sectionTable(plan) {
     return `
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Course</th><th>Section</th><th>When</th><th>Where</th><th>Instructor · GPA</th><th>Seats</th><th>Class no.</th></tr></thead>
+                <thead><tr><th>Course</th><th>Section</th><th>When</th><th>Where</th><th>Instructor · GPA · RMP</th><th>Seats</th><th>Class no.</th></tr></thead>
                 <tbody>${rows}</tbody>
             </table>
         </div>`;
