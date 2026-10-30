@@ -407,26 +407,51 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, min_credi
         def bonus_gain(n):
             return sum(1 for j, r in enumerate(bonus) if bonus_have.get(j, 0) < r.count and r.match(catalog[n]))
 
-        extras = sorted((n for n in fits if n not in chosen),
-                        key=lambda n: (bonus_gain(n) > 0, n in interest_of, quality[n]), reverse=True)
+        # Extra classes lean toward the major: about how students actually build a term.
+        # The one exception is a plan with no breadth or gen ed at all, which gets one first.
+        def kind(n):
+            matched = [r for r in reqs + bonus if r.match(catalog[n])]
+            if any(r.major for r in matched):
+                return "major"
+            return "breadth" if matched else "other"
+
+        def needs_breadth():
+            has_breadth = any(kind(n) == "breadth" for n in chosen) or \
+                          any(not r.major and r.match(c) for c in must for r in reqs + bonus)
+            return not has_breadth and any(not r.major for r in reqs + bonus)
+
+        def rank(n, breadth_first):
+            order = ("breadth", "major") if breadth_first else ("major", "breadth")
+            k = kind(n)
+            pref = 2 - order.index(k) if k in order else 0
+            return (pref, bonus_gain(n) > 0, n in interest_of, quality[n])
+
+        extras = [n for n in fits if n not in chosen]
         # First pass only takes full-size courses; second pass closes any small gap left
         # (small courses are rarer near the top of the ranking, so that pass looks further down)
         for min_size, depth in ((3, 40), (1, 200)):
-            for n in extras[:depth]:
-                if credits >= max_credits:
-                    return chosen
-                c = catalog[n]['min_credits']
-                if n in chosen or c < min(min_size, max_credits - credits):
-                    continue
-                if not too_big(chosen + [n]) and feasible(chosen + [n]):
-                    chosen, credits = chosen + [n], credits + c
+            tried = set()
+            while credits < max_credits:
+                breadth_first = needs_breadth()
+                ranked = sorted((n for n in extras if n not in chosen and n not in tried),
+                                key=lambda n: rank(n, breadth_first), reverse=True)[:depth]
+                for n in ranked:
+                    tried.add(n)
+                    c = catalog[n]['min_credits']
+                    if c < min(min_size, max_credits - credits):
+                        continue
+                    if not too_big(chosen + [n]) and feasible(chosen + [n]):
+                        chosen, credits = chosen + [n], credits + c
+                        break
+                else:
+                    break
 
         # Still under the minimum: trade a class added above for a bigger one (3 credits -> 4)
         added = [n for n in chosen if n not in required]
         for old in reversed(added):
             if credits >= min_credits:
                 break
-            for n in extras[:200]:
+            for n in sorted(extras, key=lambda n: rank(n, False), reverse=True)[:200]:
                 gain = catalog[n]['min_credits'] - catalog[old]['min_credits']
                 if n in chosen or gain <= 0:
                     continue
