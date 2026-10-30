@@ -68,6 +68,41 @@
         .hero p { grid-column: 9 / span 4; max-width: 38ch; font-size: 15px; color: rgba(255,255,255,0.92); }
 
         .stats-band { background: var(--red-dark); color: #fff; }
+
+        /* ── Start page ───────────────────────────────── */
+        .global-right { display: flex; align-items: center; gap: 18px; }
+        .global-link { color: #fff; font-size: 13px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+        .start-hero, .start { display: none; }
+        .on-start .start-hero { display: block; padding-top: 72px; padding-bottom: 64px; }
+        .on-start .start { display: block; }
+        .on-start .hero, .on-start .planner, .on-start #open-start { display: none; }
+        .start-kicker { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.85; }
+        .start-hero h1 { font-family: 'Red Hat Display', system-ui, sans-serif; font-weight: 900; font-size: clamp(40px, 6vw, 84px);
+                         line-height: 0.98; letter-spacing: -0.025em; max-width: 14ch; margin: 14px 0 22px;
+                         animation: rise 0.7s var(--ease) both; }
+        .start-hero h1 em { font-style: normal; font-weight: 500; }
+        .start-hero p { max-width: 54ch; font-size: 18px; line-height: 1.5; color: rgba(255,255,255,0.92); animation: rise 0.7s 0.12s var(--ease) both; }
+        .start-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 26px; margin-top: 30px; animation: rise 0.7s 0.22s var(--ease) both; }
+        .start-go { background: #fff; color: var(--red); font-weight: 800; font-size: 16px; padding: 15px 26px; display: inline-flex; gap: 12px; transition: background 0.2s, transform 0.2s var(--ease); }
+        .start-go:hover { background: var(--gray); }
+        .start-go span { transition: transform 0.2s var(--ease); }
+        .start-go:hover span { transform: translateX(5px); }
+        .start-more { color: #fff; font-weight: 600; font-size: 15px; text-decoration: underline; text-underline-offset: 4px; }
+        .start-block { padding-top: 64px; scroll-margin-top: 16px; }
+        .start-block .section-head .num { text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; }
+        .steps { list-style: none; padding: 0; margin: 28px 0 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gutter); }
+        .steps b { display: block; font-family: 'Red Hat Display', system-ui, sans-serif; font-size: 56px; font-weight: 900; line-height: 1; color: var(--red); }
+        .steps h3, .guide h3 { font-family: 'Red Hat Display', system-ui, sans-serif; font-size: 20px; font-weight: 800; margin: 12px 0 8px; }
+        .steps p, .guide p { color: var(--ink-2); font-size: 15px; line-height: 1.55; max-width: 44ch; }
+        .guide { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 var(--gutter); margin-top: 8px; }
+        .guide > div { padding: 22px 0 26px; border-bottom: 1px solid var(--hair); }
+        .guide .num { font-family: 'Red Hat Display', system-ui, sans-serif; font-weight: 800; font-size: 13px; color: var(--red); }
+        .guide h3 { margin-top: 4px; }
+        .start-end { display: flex; justify-content: space-between; align-items: center; gap: 24px 48px; padding-bottom: 96px; }
+        .start-end h2 { font-family: 'Red Hat Display', system-ui, sans-serif; font-size: 32px; font-weight: 900; margin-bottom: 8px; }
+        .start-end p { max-width: 60ch; font-size: 14px; }
+        .start-end .go { width: auto; min-width: 280px; flex: none; }
+        .section-desc { color: var(--ink-3); font-size: 13px; line-height: 1.5; padding: 10px 0 4px; max-width: 60ch; }
         .stats { display: grid; grid-template-columns: repeat(4, 1fr); }
         .stat { padding: 18px 0 16px 20px; border-left: 1px solid rgba(255,255,255,0.22); }
         .stat:first-child { padding-left: 0; border-left: 0; }
@@ -359,6 +394,13 @@
             .stat:nth-child(3) { padding-left: 0; border-left: 0; border-top: 1px solid rgba(255,255,255,0.22); }
             .stat:nth-child(4) { border-top: 1px solid rgba(255,255,255,0.22); }
             .col { grid-column: 1 / -1; }
+            .on-start .start-hero { padding-top: 40px; padding-bottom: 40px; }
+            .start-hero p { font-size: 16px; }
+            .steps, .guide { grid-template-columns: 1fr; }
+            .start-block { padding-top: 44px; }
+            .start-end { flex-direction: column; align-items: stretch; }
+            .start-end .go { min-width: 0; }
+            .global-link { font-size: 12px; }
             .action-inner { flex-wrap: wrap; }
             .action-note { flex-basis: 100%; }
             .action-bar .go { flex: 1; min-width: 0; }
@@ -373,11 +415,24 @@
 <header class="global">
     <div class="wrap global-inner">
         <div class="wordmark">MadPlan<small>Unofficial planner for UW–Madison students</small></div>
-        <select id="term" aria-label="Term"></select>
+        <div class="global-right">
+            <button class="global-link" id="open-start">How it works</button>
+            <select id="term" aria-label="Term"></select>
+        </div>
     </div>
 </header>
 
 <section class="hero-band">
+    <div class="wrap start-hero">
+        <span class="start-kicker">For UW–Madison students</span>
+        <h1>Your whole semester, <em>planned from your DARS.</em></h1>
+        <p>MadPlan reads your degree audit, finds what you still need, picks classes that count toward it,
+           and builds a week that fits your life. No more searching Course Search &amp; Enroll one class at a time.</p>
+        <div class="start-actions">
+            <button class="start-go" data-start>Start planning <span aria-hidden="true">→</span></button>
+            <a class="start-more" href="#how">See how it works</a>
+        </div>
+    </div>
     <div class="wrap hero">
         <h1>Plan your <em>semester.</em></h1>
         <p>Say what you still need and what you're into. You get classes that count, fit your week, and have been graded kindly.</p>
@@ -390,11 +445,65 @@
     </div></div>
 </section>
 
-<div class="wrap">
+<div class="start" id="start">
+    <div class="wrap">
+        <section class="start-block" id="how">
+            <div class="section-head"><span class="num">How it works</span><h2>Three steps to a schedule</h2></div>
+            <ol class="steps">
+                <li><b>1</b><h3>Upload your DARS</h3>
+                    <p>Export your degree audit as a PDF and drop it in. MadPlan finds every requirement you have left
+                       and the classes you've already taken. No DARS handy? Pick requirements by hand instead.</p></li>
+                <li><b>2</b><h3>Say what you want</h3>
+                    <p>Tell it what you're into, whether you'd rather keep it easy, how many credits you want,
+                       and when you're free. Every setting has a sensible default, so fill in only what matters to you.</p></li>
+                <li><b>3</b><h3>Get your schedule</h3>
+                    <p>It checks thousands of classes against your requirements, grade history and live seats,
+                       then lays out the best week it can find, with two backups ready if a class fills up.</p></li>
+            </ol>
+        </section>
+
+        <section class="start-block">
+            <div class="section-head"><span class="num">The planner</span><h2>What each section does</h2></div>
+            <div class="guide">
+                <div><span class="num">01</span><h3>What you need</h3>
+                    <p>Your DARS goes here. You'll see your requirements grouped the way DARS groups them; tick the
+                       ones to work on this semester. You can also add gen eds, breadths or major classes by hand.</p></div>
+                <div><span class="num">02</span><h3>What you like</h3>
+                    <p>Your interests, whether to lean toward easy (higher average GPA) or interesting classes,
+                       your year, and how many credits you want. It never goes over your max, 18 by default.</p></div>
+                <div><span class="num">03</span><h3>Must-haves</h3>
+                    <p>Classes you're definitely taking. Search with shorthand like <i>cs400</i> or <i>math 222</i>,
+                       and see grades and open seats. Suggestions are fitted around these.</p></div>
+                <div><span class="num">04</span><h3>Your week</h3>
+                    <p>Earliest and latest class, days you want off, tight or spread-out days, waitlists, and busy
+                       times like work or practice. Schedules are built around all of it.</p></div>
+                <div><span class="num">05</span><h3>Your schedule</h3>
+                    <p>Plan A plus two backups on a weekly calendar. Each class says what it counts for and how it's
+                       graded. Swap in other options, then copy the class numbers, export to your calendar or share a link.</p></div>
+                <div><span class="num">06</span><h3>Roadmap</h3>
+                    <p>Sketch the semesters ahead. Send a finished schedule here and watch your requirements fill up
+                       term by term.</p></div>
+            </div>
+        </section>
+
+        <section class="start-block start-end">
+            <div>
+                <h2>Ready when you are.</h2>
+                <p class="muted">Your DARS is read once and never saved. Everything else stays in your browser.
+                   MadPlan is a student project and isn't affiliated with UW–Madison, so double-check your plan
+                   against your DARS before you enroll.</p>
+            </div>
+            <button class="go" data-start><span>Start planning</span><span>→</span></button>
+        </section>
+    </div>
+</div>
+
+<div class="wrap planner">
     <div class="layout">
         <div class="col">
             <section class="section reveal">
                 <div class="section-head"><span class="num">01</span><h2>What you need</h2></div>
+                <p class="section-desc">The requirements you still have to finish. Upload your DARS to fill this in, or add them by hand below.</p>
                 <div class="dars" id="dars"></div>
                 <div id="dars-reqs"></div>
                 <div class="or-hand" id="or-hand">Or add requirements by hand</div>
@@ -423,6 +532,7 @@
         <div class="col">
             <section class="section reveal">
                 <div class="section-head"><span class="num">02</span><h2>What you like</h2></div>
+                <p class="section-desc">Steers which classes get picked: your interests, easy or interesting, your year, and your credit load.</p>
                 <div class="pref">
                     <label for="interests">Into</label>
                     <input type="text" id="interests" placeholder="music, film, psychology" autocomplete="off">
@@ -485,6 +595,7 @@
         <div class="col">
             <section class="section reveal">
                 <div class="section-head"><span class="num">04</span><h2>Your week</h2></div>
+                <p class="section-desc">When you want to be in class. Schedules are built around these times and anything you're busy with.</p>
                 <div class="pref">
                     <label for="pref-start">Earliest class</label>
                     <select id="pref-start"></select>
@@ -539,6 +650,7 @@
 
     <section class="section schedule-section" id="schedule-section" hidden>
         <div class="section-head"><span class="num">05</span><h2>Your schedule</h2><span class="aside" id="checked"></span></div>
+        <p class="section-desc">Plan A is the best fit; B and C are backups. Swap any class for another option, then copy the class numbers to enroll.</p>
         <div id="output"></div>
     </section>
 
@@ -1680,6 +1792,28 @@ function downloadIcs() {
     URL.revokeObjectURL(a.href);
 }
 
+// ── Start page ──────────────────────────────────────────────
+// First-time visitors see what MadPlan is before the planner; "How it works" brings it back.
+
+const SEEN_KEY = "madplan-seen";
+
+function showStart(on) {
+    document.body.classList.toggle("on-start", on);
+    window.scrollTo(0, 0);
+}
+
+document.querySelectorAll("[data-start]").forEach(btn => btn.addEventListener("click", () => {
+    try { localStorage.setItem(SEEN_KEY, "1"); } catch (e) { /* will just show again next time */ }
+    showStart(false);
+}));
+$("#open-start").addEventListener("click", () => showStart(true));
+
+function seenStart() {
+    try { return localStorage.getItem(SEEN_KEY) === "1" || !!localStorage.getItem(STORE_KEY) || !!localStorage.getItem("madplan"); }
+    catch (e) { return false; }
+}
+if (!location.hash.startsWith("#share=") && !seenStart()) showStart(true);
+
 // ── Boot ────────────────────────────────────────────────────
 
 (async () => {
@@ -1695,6 +1829,7 @@ function downloadIcs() {
         renderRoadmap();
         if (showShared()) $("#output").scrollIntoView();
     } catch (e) {
+        $("#schedule-section").hidden = false;
         $("#output").innerHTML = `<div class="empty"><span class="serif">Offline.</span><span class="muted">Couldn't reach UW's course API. Check your connection and reload.</span></div>`;
     }
 })();
