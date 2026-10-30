@@ -181,7 +181,7 @@ def fill():
         term, must, specs, prefs,
         blocked=parse_blocked(body.get("blocked")),
         include_closed=bool(body.get("include_closed")),
-        target_credits=int(body.get("target_credits") or 0) or None,
+        min_credits=int(body.get("min_credits") or 0) or None,
         interests=body.get("interests") or [],
         priority=body.get("priority") or "balanced",
         skip_prereqs=body.get("skip_prereqs", True),
@@ -190,6 +190,7 @@ def fill():
         programs=body.get("programs") or [],
         bonus_specs=body.get("bonus_requirements") or [],
         max_credits=int(body.get("max_credits") or 0) or suggest.MAX_CREDITS,
+        max_classes=int(body.get("max_classes") or 0) or None,
     )
     if "error" in result:
         return jsonify(error=result["error"]), 400
@@ -214,7 +215,9 @@ def fill():
         covered=result["covered"],
         unfilled=result["unfilled"],
         over_cap=result["over_cap"],
+        min_credits=result["min_credits"],
         max_credits=result["max_credits"],
+        max_classes=result["max_classes"],
         checked=result["checked"],
         fitting=result["fitting"],
     )

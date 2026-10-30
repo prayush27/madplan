@@ -192,20 +192,22 @@ def _fits_any(options, base_schedules):
                for opt in options for base in base_schedules)
 
 
-def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_credits=None,
+def fill(term, must, specs, prefs, blocked=None, include_closed=False, min_credits=None,
          interests=(), priority="balanced", skip_prereqs=True, standing=None, completed=None,
-         programs=(), bonus_specs=(), max_credits=MAX_CREDITS):
+         programs=(), bonus_specs=(), max_credits=MAX_CREDITS, max_classes=None):
     """
     must:      course summaries the student is definitely taking
     specs:     requirement specs (see build_requirement)
     completed: course names already taken or in progress (from DARS); when given, prerequisites
                are checked against it instead of skipping every course that has one
     bonus_specs: other open requirements not asked for this term; extra credits go toward these first
-    max_credits: no plan goes over this; requirements that don't fit under it are left for later terms
+    min_credits, max_credits: the credit range. Plans fill toward the top and never go over it;
+               requirements that don't fit are left for later terms
+    max_classes: optional cap on how many classes, must-haves included
     Returns a dict with plans, per-requirement alternatives and anything that couldn't be filled.
     """
     reqs  = [r for r in (build_requirement(term, s) for s in specs) if r]
-    bonus = [r for r in (build_requirement(term, s) for s in bonus_specs) if r] if target_credits else []
+    bonus = [r for r in (build_requirement(term, s) for s in bonus_specs) if r]
     interests = [i.strip() for i in interests if i.strip()][:4]
 
     # 1. Best arrangements of the must-haves — suggestions have to fit around one of these
@@ -224,10 +226,13 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
     completed = [c.upper() for c in completed] if completed is not None else None
 
     max_credits  = max(1, min(MAX_CREDITS, int(max_credits or MAX_CREDITS)))
-    target_credits = min(target_credits, max_credits) if target_credits else None
+    min_credits  = min(int(min_credits or 0), max_credits)
+    max_classes  = int(max_classes) if max_classes else None
     must_credits = sum(c['min_credits'] for c in must)
     if must_credits > max_credits:
         return {"error": f"Your must-haves are already {must_credits:g} credits, over your max of {max_credits}."}
+    if max_classes and len(must) > max_classes:
+        return {"error": f"You have {len(must)} must-haves, more than your limit of {max_classes} classes."}
 
     # Must-haves count toward requirements first; covered_by names the one that finished a requirement
     must_alloc = allocate(reqs, must)
@@ -271,8 +276,7 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
             continue
         searches.append((r.filters, "", POOL_SIZE, None))
         searches += [(r.filters, word, 60, word) for word in interests]
-    if target_credits:
-        searches += [([], word, 80, word) for word in interests]
+    searches += [([], word, 80, word) for word in interests]
     for r in bonus:
         searches += [([], name, 5, None) for name in r.courses] if r.courses else [(r.filters, "", 150, None)]
     results = pool.map(lambda a: uw_api.search_courses(term, a[1], filters=a[0] + [UNDERGRAD],
@@ -321,6 +325,10 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
     def credits(chosen):
         return must_credits + sum(catalog[n]['min_credits'] for n in chosen)
 
+    def too_big(chosen):
+        """Over the credit range's top, or over the class limit."""
+        return credits(chosen) > max_credits or bool(max_classes and len(must) + len(chosen) > max_classes)
+
     order = sorted((i for i, c in candidates.items() if c), key=lambda i: len(candidates[i]))
     covered_idx = set(order)
     sets  = []
@@ -343,7 +351,7 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
             if n in chosen:
                 continue
             chosen.append(n)
-            if credits(chosen) > max_credits:
+            if too_big(chosen):
                 checks[0] += 1    # count these too, so an impossible cap can't search forever
             elif feasible(chosen):
                 search(k, chosen, j + 1)
@@ -362,7 +370,7 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
             for n in candidates[i][:BRANCH + need[i]]:
                 if n in best:
                     continue
-                if credits(best + [n]) > max_credits:
+                if too_big(best + [n]):
                     hit_cap.add(i)
                 elif feasible(best + [n]):
                     best.append(n)
@@ -388,12 +396,11 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
                     for i in sorted(order) if i in hit_cap and not done(i)]
         sets = [best]
 
-    # 6. Top up to the credit target with the best remaining courses
+    # 6. Top up toward the top of the credit range with the best remaining courses
 
     def top_up(chosen):
+        required = set(chosen)   # picked for a requirement; only classes added here get swapped
         credits = must_credits + sum(catalog[n]['min_credits'] for n in chosen)
-        if not target_credits:
-            return chosen
         # Prefer courses that also knock out another open requirement, then interest, then quality
         bonus_have = allocate(bonus, [catalog[n] for n in chosen] + list(must))
 
@@ -403,15 +410,30 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
         extras = sorted((n for n in fits if n not in chosen),
                         key=lambda n: (bonus_gain(n) > 0, n in interest_of, quality[n]), reverse=True)
         # First pass only takes full-size courses; second pass closes any small gap left
-        for min_size in (3, 1):
-            for n in extras[:40]:
-                if credits >= target_credits:
+        # (small courses are rarer near the top of the ranking, so that pass looks further down)
+        for min_size, depth in ((3, 40), (1, 200)):
+            for n in extras[:depth]:
+                if credits >= max_credits:
                     return chosen
                 c = catalog[n]['min_credits']
-                if n in chosen or c < min(min_size, target_credits - credits):
+                if n in chosen or c < min(min_size, max_credits - credits):
                     continue
-                if credits + c <= min(target_credits + 1, max_credits) and feasible(chosen + [n]):
+                if not too_big(chosen + [n]) and feasible(chosen + [n]):
                     chosen, credits = chosen + [n], credits + c
+
+        # Still under the minimum: trade a class added above for a bigger one (3 credits -> 4)
+        added = [n for n in chosen if n not in required]
+        for old in reversed(added):
+            if credits >= min_credits:
+                break
+            for n in extras[:200]:
+                gain = catalog[n]['min_credits'] - catalog[old]['min_credits']
+                if n in chosen or gain <= 0:
+                    continue
+                swapped = [x for x in chosen if x != old] + [n]
+                if not too_big(swapped) and feasible(swapped):
+                    chosen, credits = swapped, credits + gain
+                    break
         return chosen
 
     # 7. Turn the best course sets into actual schedules and rank them
@@ -453,7 +475,9 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, target_cr
         "covered":      [{"label": reqs[i].label, "by": name} for i, name in covered_by.items() if name],
         "unfilled":     unfilled,
         "over_cap":     over_cap,
+        "min_credits":  min_credits,
         "max_credits":  max_credits,
+        "max_classes":  max_classes,
         "checked":      len(catalog),
         "fitting":      len(fits),
         "grades":       {n: grades[n] for n in fits},

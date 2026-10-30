@@ -216,6 +216,9 @@
         .inline-form { display: flex; gap: 12px; align-items: center; }
         .inline-form input[type=text] { flex: 1; min-width: 0; }
         .inline-form select { width: auto; padding: 6px 16px 6px 0; }
+        .inline-form.range select { min-width: 64px; }
+        .topics-link { margin-top: 14px; color: var(--ink-2); }
+        .topics-link:hover { color: var(--red); }
         #search { margin-top: 8px; }
         .busy-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 0; }
 
@@ -454,8 +457,8 @@
                     <p>Export your degree audit as a PDF and drop it in. MadPlan finds every requirement you have left
                        and the classes you've already taken. No DARS handy? Pick requirements by hand instead.</p></li>
                 <li><b>2</b><h3>Say what you want</h3>
-                    <p>Tell it what you're into, whether you'd rather keep it easy, how many credits you want,
-                       and when you're free. Every setting has a sensible default, so fill in only what matters to you.</p></li>
+                    <p>Pick your credit range, how many classes you can handle, whether you'd rather keep it
+                       easy, and when you're free. Every setting has a sensible default, so fill in only what matters to you.</p></li>
                 <li><b>3</b><h3>Get your schedule</h3>
                     <p>It checks thousands of classes against your requirements, grade history and live seats,
                        then lays out the best week it can find, with two backups ready if a class fills up.</p></li>
@@ -468,9 +471,9 @@
                 <div><span class="num">01</span><h3>What you need</h3>
                     <p>Your DARS goes here. You'll see your requirements grouped the way DARS groups them; tick the
                        ones to work on this semester. You can also add gen eds, breadths or major classes by hand.</p></div>
-                <div><span class="num">02</span><h3>What you like</h3>
-                    <p>Your interests, whether to lean toward easy (higher average GPA) or interesting classes,
-                       your year, and how many credits you want. It never goes over your max, 18 by default.</p></div>
+                <div><span class="num">02</span><h3>Your load</h3>
+                    <p>Your credit range, like 14 to 16, and the most classes you want to juggle. Lean toward easy
+                       classes (higher average GPA) or interesting ones. Plans never go over your range.</p></div>
                 <div><span class="num">03</span><h3>Must-haves</h3>
                     <p>Classes you're definitely taking. Search with shorthand like <i>cs400</i> or <i>math 222</i>,
                        and see grades and open seats. Suggestions are fitted around these.</p></div>
@@ -531,11 +534,60 @@
 
         <div class="col">
             <section class="section reveal">
-                <div class="section-head"><span class="num">02</span><h2>What you like</h2></div>
-                <p class="section-desc">Steers which classes get picked: your interests, easy or interesting, your year, and your credit load.</p>
+                <div class="section-head"><span class="num">02</span><h2>Your load</h2></div>
+                <p class="section-desc">How heavy you want this semester to be. Plans fill toward the top of your credit range and never go over it.</p>
                 <div class="pref">
-                    <label for="interests">Into</label>
-                    <input type="text" id="interests" placeholder="music, film, psychology" autocomplete="off">
+                    <span>Credits</span>
+                    <div class="inline-form range">
+                        <select id="credits-min" aria-label="Fewest credits">
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                            <option value="13">13</option>
+                            <option value="14" selected>14</option>
+                            <option value="15">15</option>
+                            <option value="16">16</option>
+                            <option value="17">17</option>
+                            <option value="18">18</option>
+                        </select>
+                        <span class="muted">to</span>
+                        <select id="credits-max" aria-label="Most credits">
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                            <option value="13">13</option>
+                            <option value="14">14</option>
+                            <option value="15">15</option>
+                            <option value="16" selected>16</option>
+                            <option value="17">17</option>
+                            <option value="18">18</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="pref">
+                    <label for="max-classes">Max classes</label>
+                    <select id="max-classes">
+                        <option value="0" selected>Any</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                    </select>
                 </div>
                 <div class="pref">
                     <span>Lean toward</span>
@@ -547,38 +599,21 @@
                 </div>
                 <div class="pref">
                     <span>Your year</span>
-                    <div class="toggles">
-                        <label><input type="radio" name="standing" value="1"><span>1st</span></label>
-                        <label><input type="radio" name="standing" value="2" checked><span>2nd</span></label>
-                        <label><input type="radio" name="standing" value="3"><span>3rd</span></label>
-                        <label><input type="radio" name="standing" value="4"><span>4th+</span></label>
+                    <div>
+                        <div class="toggles">
+                            <label><input type="radio" name="standing" value="1"><span>1st</span></label>
+                            <label><input type="radio" name="standing" value="2" checked><span>2nd</span></label>
+                            <label><input type="radio" name="standing" value="3"><span>3rd</span></label>
+                            <label><input type="radio" name="standing" value="4"><span>4th+</span></label>
+                        </div>
+                        <span class="small faint" id="year-src" hidden>Filled in from your DARS</span>
                     </div>
                 </div>
-                <div class="pref">
-                    <label for="target">Fill to</label>
-                    <select id="target">
-                        <option value="0">just the requirements</option>
-                        <option value="12">12 credits</option>
-                        <option value="13">13 credits</option>
-                        <option value="14">14 credits</option>
-                        <option value="15">15 credits</option>
-                        <option value="16">16 credits</option>
-                        <option value="17">17 credits</option>
-                        <option value="18">18 credits</option>
-                    </select>
+                <div class="pref" id="interests-row" hidden>
+                    <label for="interests">Topics</label>
+                    <input type="text" id="interests" placeholder="music, film, psychology" autocomplete="off">
                 </div>
-                <div class="pref">
-                    <label for="max-credits">At most</label>
-                    <select id="max-credits">
-                        <option value="12">12 credits</option>
-                        <option value="13">13 credits</option>
-                        <option value="14">14 credits</option>
-                        <option value="15">15 credits</option>
-                        <option value="16">16 credits</option>
-                        <option value="17">17 credits</option>
-                        <option value="18" selected>18 credits</option>
-                    </select>
-                </div>
+                <button class="link small topics-link" id="show-interests">+ Add topics you'd enjoy</button>
             </section>
 
             <section class="section reveal">
@@ -851,23 +886,31 @@ async function initNeeds(saved) {
     $("#interests").value = n.interests || "";
     if (n.priority) document.querySelector(`input[name=priority][value=${n.priority}]`).checked = true;
     if (n.standing) document.querySelector(`input[name=standing][value="${n.standing}"]`).checked = true;
-    if (n.target) $("#target").value = n.target;
-    if (n.max) $("#max-credits").value = n.max;
+    if (n.min) $("#credits-min").value = n.min;
+    if (n.max) $("#credits-max").value = n.max;
+    if (n.maxClasses) $("#max-classes").value = n.maxClasses;
+    if (n.interests) showInterests();
     renderReqs();
 
-    document.querySelectorAll("#interests, input[name=priority], input[name=standing], #target, #max-credits")
+    document.querySelectorAll("#interests, input[name=priority], input[name=standing], #credits-min, #credits-max, #max-classes")
         .forEach(el => el.addEventListener("change", save));
-    // Keep "fill to" from going past "at most", whichever one changed
-    $("#target").addEventListener("change", () => {
-        if (+$("#target").value > +$("#max-credits").value) $("#max-credits").value = $("#target").value;
+    // Keep the range the right way round, whichever end changed
+    $("#credits-min").addEventListener("change", () => {
+        if (+$("#credits-min").value > +$("#credits-max").value) $("#credits-max").value = $("#credits-min").value;
     });
-    $("#max-credits").addEventListener("change", () => {
-        if (+$("#target").value > +$("#max-credits").value) $("#target").value = $("#max-credits").value;
+    $("#credits-max").addEventListener("change", () => {
+        if (+$("#credits-min").value > +$("#credits-max").value) $("#credits-min").value = $("#credits-max").value;
     });
+    $("#show-interests").addEventListener("click", () => { showInterests(); $("#interests").focus(); });
 
     state.kinds = await fetch("/api/requirements").then(r => r.json());
     $("#req-add").innerHTML = `<option value="">Add one…</option>` +
         state.kinds.map(k => `<option value="${k.kind}">${esc(k.label)}</option>`).join("");
+}
+
+function showInterests() {
+    $("#interests-row").hidden = false;
+    $("#show-interests").hidden = true;
 }
 
 function readNeeds() {
@@ -875,8 +918,9 @@ function readNeeds() {
         interests: $("#interests").value,
         priority:  document.querySelector("input[name=priority]:checked").value,
         standing:  +document.querySelector("input[name=standing]:checked").value,
-        target:    +$("#target").value,
-        max:       +$("#max-credits").value,
+        min:       +$("#credits-min").value,
+        max:       +$("#credits-max").value,
+        maxClasses: +$("#max-classes").value,
     };
 }
 
@@ -966,6 +1010,7 @@ async function readDars(file) {
         })),
     };
     if (res.year) document.querySelector(`input[name=standing][value="${Math.min(4, res.year)}"]`).checked = true;
+    $("#year-src").hidden = !res.year;
     renderDars();
     renderProgress();
     save();
@@ -996,6 +1041,7 @@ function renderDars(error) {
                 ${error ? `<p class="dars-error">${esc(error)}</p>` : ""}
             </label>`;
         $("#dars-reqs").innerHTML = "";
+        $("#year-src").hidden = true;
         // The input was re-created, so re-attach the upload and drag-and-drop handlers
         box.querySelector("#dars-file").addEventListener("change", onDarsFile);
         const drop = $("#dars-drop");
@@ -1031,6 +1077,7 @@ function renderDars(error) {
     });
     $("#pref-prereqs").checked = true;
     $("#pref-prereqs").disabled = true;
+    $("#year-src").hidden = !d.year;
     $("#pref-prereqs").parentElement.lastChild.textContent = " Checked against your DARS";
 
     let group = null;
@@ -1292,8 +1339,9 @@ async function makeSchedules() {
         interests:      needs.interests.split(",").map(s => s.trim()).filter(Boolean),
         priority:       needs.priority,
         standing:       needs.standing,
-        target_credits: needs.target,
+        min_credits:    needs.min,
         max_credits:    needs.max,
+        max_classes:    needs.maxClasses,
         skip_prereqs:   prefs.skip_prereqs,
     });
 
@@ -1340,7 +1388,12 @@ function renderOutput() {
         alerts += `<div class="note-line">${esc(c.label)} is already covered by <b>${esc(c.by)}</b>.</div>`;
     }
     if ((res.over_cap || []).length) {
-        alerts += `<div class="note-line bad"><b>${res.over_cap.map(esc).join(", ")}</b> didn't fit under your ${res.max_credits}-credit max. Save ${res.over_cap.length > 1 ? "them" : "it"} for another term, or untick something else.</div>`;
+        const limit = `${res.max_credits} credits` + (res.max_classes ? ` or ${res.max_classes} classes` : "");
+        alerts += `<div class="note-line bad"><b>${res.over_cap.map(esc).join(", ")}</b> didn't fit within ${limit}. Save ${res.over_cap.length > 1 ? "them" : "it"} for another term, or untick something else.</div>`;
+    }
+    const best = (res.plans || [])[0];
+    if (best && res.min_credits && best.credits < res.min_credits) {
+        alerts += `<div class="note-line bad">Only found <b>${best.credits} credits</b> that fit your week, under your ${res.min_credits}-credit minimum. Try allowing full sections, freeing up a busy time, or ticking another requirement.</div>`;
     }
     for (const label of res.unfilled || []) {
         alerts += `<div class="note-line bad">Nothing open for <b>${esc(label)}</b> fits around your must-haves and busy times.</div>`;
