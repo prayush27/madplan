@@ -88,8 +88,21 @@
             display: grid; grid-template-columns: repeat(12, 1fr); gap: 0 var(--gutter);
             padding-top: 24px; padding-bottom: 96px;
         }
-        .left  { grid-column: span 4; min-width: 0; }
-        .right { grid-column: span 8; min-width: 0; }
+        .layout { padding-bottom: 0; }
+        .col { grid-column: span 4; min-width: 0; }
+
+        /* Stays on screen while you fill things in, so the button is always in reach */
+        .action-bar { position: sticky; bottom: 0; z-index: 5; background: rgba(255,255,255,0.94);
+                      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+                      border-top: 1px solid var(--hair); margin: 8px calc(-1 * var(--gutter)) 0; padding: 14px var(--gutter); }
+        .action-inner { display: flex; align-items: center; gap: 12px 24px; }
+        .action-note { flex: 1; font-size: 13px; color: var(--ink-3); }
+        .action-note.bad { color: var(--red); font-weight: 600; }
+        .action-bar .go { width: auto; min-width: 280px; margin: 0; }
+        .action-bar .reset { margin: 0; }
+
+        .schedule-section { margin-top: 40px; scroll-margin-top: 16px; }
+        .schedule-section:not([hidden]) { animation: rise 0.6s var(--ease) both; }
 
         .section { padding-top: 20px; margin-bottom: 48px; }
         .section-head {
@@ -345,7 +358,10 @@
             .stat { padding: 14px 0 12px 14px; }
             .stat:nth-child(3) { padding-left: 0; border-left: 0; border-top: 1px solid rgba(255,255,255,0.22); }
             .stat:nth-child(4) { border-top: 1px solid rgba(255,255,255,0.22); }
-            .left, .right { grid-column: 1 / -1; }
+            .col { grid-column: 1 / -1; }
+            .action-inner { flex-wrap: wrap; }
+            .action-note { flex-basis: 100%; }
+            .action-bar .go { flex: 1; min-width: 0; }
             .plan .letter { font-size: 34px; }
             .plan { padding: 12px 8px 12px 0; grid-template-columns: 1fr; }
             .plan .letter { grid-row: auto; }
@@ -376,7 +392,7 @@
 
 <div class="wrap">
     <div class="layout">
-        <div class="left">
+        <div class="col">
             <section class="section reveal">
                 <div class="section-head"><span class="num">01</span><h2>What you need</h2></div>
                 <div class="dars" id="dars"></div>
@@ -401,6 +417,12 @@
                         <button class="link small" id="req-subject-add">Add</button>
                     </div>
                 </div>
+            </section>
+        </div>
+
+        <div class="col">
+            <section class="section reveal">
+                <div class="section-head"><span class="num">02</span><h2>What you like</h2></div>
                 <div class="pref">
                     <label for="interests">Into</label>
                     <input type="text" id="interests" placeholder="music, film, psychology" autocomplete="off">
@@ -450,7 +472,7 @@
             </section>
 
             <section class="section reveal">
-                <div class="section-head"><span class="num">02</span><h2>Must-haves</h2><span class="aside" id="credit-total"></span></div>
+                <div class="section-head"><span class="num">03</span><h2>Must-haves</h2><span class="aside" id="credit-total"></span></div>
                 <div id="mine"></div>
                 <input type="text" id="search" placeholder="Already know one? cs400, math 222…" autocomplete="off" aria-label="Search courses">
                 {% if not grades_enabled %}
@@ -458,9 +480,11 @@
                 {% endif %}
                 <div id="results"></div>
             </section>
+        </div>
 
+        <div class="col">
             <section class="section reveal">
-                <div class="section-head"><span class="num">03</span><h2>Preferences</h2></div>
+                <div class="section-head"><span class="num">04</span><h2>Your week</h2></div>
                 <div class="pref">
                     <label for="pref-start">Earliest class</label>
                     <select id="pref-start"></select>
@@ -500,28 +524,26 @@
                     </div>
                 </div>
             </section>
-
-            <button class="go" id="generate"><span>Make schedules</span><span>→</span></button>
-            <div class="reset" id="reset">
-                <button class="link small muted" id="reset-ask">Clear everything</button>
-            </div>
-        </div>
-
-        <div class="right">
-            <section class="section reveal">
-                <div class="section-head"><span class="num">04</span><h2>Schedule</h2><span class="aside" id="checked"></span></div>
-                <div id="output">
-                    <div class="empty">
-                        <span class="serif">Nothing here yet.</span>
-                        <span class="muted">Add what you need, maybe a must-have or two, then make schedules.</span>
-                    </div>
-                </div>
-            </section>
         </div>
     </div>
 
+    <div class="action-bar">
+        <div class="action-inner">
+            <span class="action-note" id="go-note">Fill in what you can. Everything has a sensible default.</span>
+            <div class="reset" id="reset">
+                <button class="link small muted" id="reset-ask">Clear everything</button>
+            </div>
+            <button class="go" id="generate"><span>Make schedules</span><span>→</span></button>
+        </div>
+    </div>
+
+    <section class="section schedule-section" id="schedule-section" hidden>
+        <div class="section-head"><span class="num">05</span><h2>Your schedule</h2><span class="aside" id="checked"></span></div>
+        <div id="output"></div>
+    </section>
+
     <section class="section roadmap-section reveal" id="roadmap-section">
-        <div class="section-head"><span class="num">05</span><h2>Roadmap</h2><span class="aside" id="roadmap-total"></span></div>
+        <div class="section-head"><span class="num">06</span><h2>Roadmap</h2><span class="aside" id="roadmap-total"></span></div>
         <p class="status">Sketch the semesters ahead. Add courses to any term, or send a finished schedule here with “Add to roadmap”.</p>
         <div class="roadmap" id="roadmap"></div>
         <div class="progress" id="progress"></div>
@@ -1125,9 +1147,14 @@ async function makeSchedules() {
     const out = $("#output");
     const filling = state.reqs.length + darsSpecs().length > 0;
     if (!filling && !state.mine.length) {
-        out.innerHTML = `<div class="empty"><span class="serif">Nothing to plan yet.</span><span class="muted">Add a requirement you still need, or a must-have course.</span></div>`;
+        const note = $("#go-note");
+        note.textContent = "Add a requirement you still need, or a must-have course, first.";
+        note.classList.add("bad");
         return;
     }
+    $("#go-note").textContent = "Change anything above and make schedules again.";
+    $("#go-note").classList.remove("bad");
+    showScheduleSection();
     const btn = $("#generate");
     btn.disabled = true;
     btn.firstElementChild.textContent = "Working";
@@ -1168,7 +1195,7 @@ async function makeSchedules() {
         state.plans = res.plans || [];
         state.activePlan = 0;
         renderOutput();
-        if (window.innerWidth <= 960) out.scrollIntoView({ behavior: "smooth" });
+        showScheduleSection();   // the results are taller than the loading message, so line it up again
     } catch (e) {
         out.innerHTML = `<div class="empty"><span class="serif">That didn't work.</span><span class="muted">The server or UW's course API didn't respond. Try again in a minute.</span></div>`;
     } finally {
@@ -1573,6 +1600,13 @@ function copyShareLink() {
     });
 }
 
+// The schedule only appears once there's something to show, then scrolls into view
+function showScheduleSection() {
+    const section = $("#schedule-section");
+    section.hidden = false;
+    section.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+}
+
 function showShared() {
     const m = location.hash.match(/^#share=(.+)$/);
     if (!m) return false;
@@ -1586,6 +1620,7 @@ function showShared() {
     state.plans = [{ score: "—", notes: [], credits: data.c, sections, tight_walks: [] }];
     state.activePlan = 0;
     state.lastResult = { shared: true, termName: data.n, plans: state.plans };
+    $("#schedule-section").hidden = false;
     renderOutput();
     return true;
 }
