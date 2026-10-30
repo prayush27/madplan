@@ -588,9 +588,11 @@ function colorFor(name) {
     return COLORS[(i < 0 ? 0 : i) % COLORS.length];
 }
 
+const STORE_KEY = "madplan";
+
 function save() {
     try {
-        localStorage.setItem("madplan", JSON.stringify({
+        localStorage.setItem(STORE_KEY, JSON.stringify({
             term: state.term, mine: state.mine, busy: state.busy, reqs: state.reqs, roadmap: state.roadmap,
             dars: state.dars,
             prefs: readPrefs(), needs: readNeeds(),
@@ -599,7 +601,8 @@ function save() {
 }
 
 function load() {
-    try { return JSON.parse(localStorage.getItem("madplan")) || {}; }
+    // Plans saved before the rename to MadPlan live under the old key
+    try { return JSON.parse(localStorage.getItem(STORE_KEY) || localStorage.getItem("madplan")) || {}; }
     catch (e) { return {}; }
 }
 
@@ -616,7 +619,7 @@ $("#reset").addEventListener("click", (e) => {
     } else if (e.target.id === "reset-yes") {
         try {
             const kept = load();
-            localStorage.setItem("madplan", JSON.stringify({ term: kept.term, roadmap: kept.roadmap }));
+            localStorage.setItem(STORE_KEY, JSON.stringify({ term: kept.term, roadmap: kept.roadmap }));
         } catch (err) { /* nothing saved to clear */ }
         location.replace(location.pathname);   // reload with the form at its defaults
     } else if (e.target.id === "reset-no") {
