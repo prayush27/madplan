@@ -6,7 +6,7 @@ Personal project. Not affiliated with or endorsed by the University of Wisconsin
 
 ## What it does
 
-- **Reads your DARS.** Upload the PDF export and it finds the courses you've taken, your year, and every requirement you have left. The file is parsed in memory and never saved.
+- **Reads your DARS.** Upload the PDF export and it finds the courses you've taken, your year, and every requirement you have left. Any unmet requirement it can't turn into a class search is listed separately, so nothing drops out silently. The file is parsed in memory and never saved.
 - **Picks classes for you.** For each requirement you tick, it searches the live catalog and ranks the options by grade history (from Madgrades), your interests, and whether one class can cover several requirements at once. It skips classes you've taken, checks prerequisites against your record, and leaves out grad-only and honors-only courses.
 - **Stays under a credit cap.** You set a target and a maximum (18 by default). If everything you ticked won't fit, it mixes about three major classes for every two gen eds and tells you what's left for later.
 - **Builds the week.** A backtracking search tries every section combination and scores each schedule on your earliest and latest class, days off, gaps, and walking time between buildings. You get the best plan plus backups.

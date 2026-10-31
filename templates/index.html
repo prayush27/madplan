@@ -257,6 +257,10 @@
         .dars-bulk { flex: none; font-size: 12px; color: var(--ink-3); white-space: nowrap; }
         .dars-reqs-head .link { color: var(--ink-2); }
         .dars-reqs-head .link:hover { color: var(--red); }
+        .dars-unread { margin: 18px 0 4px; padding: 12px 14px; border-left: 3px solid var(--ink-3); background: var(--paper-2); font-size: 13px; }
+        .dars-unread p { margin: 0 0 6px; color: var(--ink-2); }
+        .dars-unread ul { margin: 0; padding-left: 18px; }
+        .dars-unread li { padding: 2px 0; }
         .dars-group { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding: 14px 0 4px; }
 
         /* Why these / alternatives */
@@ -1010,6 +1014,8 @@ async function readDars(file) {
             // Start with the university gen eds plus the first open major requirement switched on
             on: /general education/i.test(r.group) || i === firstMajor,
         })),
+        // Unmet requirements the parser couldn't turn into a class search
+        unread: res.unread || [],
     };
     if (res.year) document.querySelector(`input[name=standing][value="${Math.min(4, res.year)}"]`).checked = true;
     $("#year-src").hidden = !res.year;
@@ -1019,6 +1025,20 @@ async function readDars(file) {
 }
 
 renderDars();
+
+// Lists unmet DARS requirements that aren't in the checklist, so nothing goes missing silently.
+function unreadNotice(unread) {
+    if (!unread.length) return "";
+    const n = unread.length;
+    return `
+        <div class="dars-unread">
+            <p><b>${n} requirement${n > 1 ? "s" : ""} couldn't be read.</b> ${n > 1 ? "They aren't" : "It isn't"} in the
+               list above, so check ${n > 1 ? "them" : "it"} in your DARS or add ${n > 1 ? "them" : "it"} by hand below.</p>
+            <ul>${unread.map(u => `<li><span class="code">${esc(u.label)}</span>${
+                u.label !== u.group && !u.group.endsWith(u.label) ? ` <span class="small faint">${esc(u.group)}</span>` : ""}${
+                u.needs ? ` <span class="small muted">· ${esc(u.needs)}</span>` : ""}</li>`).join("")}</ul>
+        </div>`;
+}
 
 function renderDars(error) {
     const box = $("#dars");
@@ -1098,7 +1118,7 @@ function renderDars(error) {
                 <span class="small muted">${esc(r.needs)}</span>
                 ${r.kind === "list" ? `<span class="small faint">${esc(r.courses.slice(0, 6).join(", "))}${r.courses.length > 6 ? ` +${r.courses.length - 6} more` : ""}</span>` : ""}
             </label>`;
-    }).join("");
+    }).join("") + unreadNotice(d.unread || []);
     stagger($("#dars-reqs"));
     $("#dars-reqs").querySelectorAll("[data-dars-i]").forEach(cb => cb.addEventListener("change", () => {
         d.requirements[+cb.dataset.darsI].on = cb.checked;

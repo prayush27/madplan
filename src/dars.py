@@ -79,7 +79,7 @@ def courses_needed(credits, courses):
 
 def parse(text):
     lines  = text.splitlines()
-    result = {"program": None, "year": None, "taken": [], "requirements": []}
+    result = {"program": None, "year": None, "taken": [], "requirements": [], "unread": []}
 
     for line in lines[:15]:
         m = re.search(r'CL/YR:\s*\w+\s+(\d)', line)
@@ -146,6 +146,15 @@ def parse(text):
             if target and target["select"] and re.match(r'^\s{10,}[A-Z0-9]', line) and not NEEDS.search(line):
                 target["select"] += " " + line.strip()
 
+        def unread(title, needs=""):
+            entry = {"group": group, "label": title, "needs": needs}
+            if entry not in result["unread"]:
+                result["unread"].append(entry)
+
+        if not subs:
+            # An unmet course requirement with no sub-requirement or NEEDS line we recognise
+            unread(group.split(":")[-1].strip())
+
         for sub in subs:
             if sub["done"] or NOT_COURSEWORK.search(sub["title"]):
                 continue
@@ -154,9 +163,15 @@ def parse(text):
                 kind = next((k for pattern, k in TITLE_KINDS if pattern.search(sub["title"]) or
                              pattern.search(group)), None)
                 spec = {"kind": kind} if kind else None
-            if not spec or sub["needs"] is None and not sub["select"]:
-                continue
             credits, count = sub["needs"] or (None, None)
+            if not spec or sub["needs"] is None and not sub["select"]:
+                # A block-level total ("--> NEEDS: 9 credits") is covered by the sub-requirements under it
+                if sub["title"] == group and len(subs) > 1:
+                    continue
+                unread(sub["title"] if sub["title"] != group else group.split(":")[-1].strip(),
+                       f"{count} course{'s' if int(count) > 1 else ''}" if count
+                       else f"{float(credits):g} credits" if credits else "")
+                continue
             title = sub["title"] if sub["title"] != group else group.split(":")[-1].strip()
             result["requirements"].append({
                 "group": group,
