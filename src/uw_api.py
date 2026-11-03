@@ -13,7 +13,9 @@ from datetime import datetime, timezone
 from course import Course, CourseEntry
 
 BASE_URL  = "https://public.enroll.wisc.edu/api/search/v1"
-CACHE_DIR = os.path.join(os.path.dirname(__file__), '..', 'data', 'cache')
+# Vercel only allows writing to /tmp, which is wiped now and then; locally the cache lives in data/
+CACHE_DIR = ('/tmp/madplan-cache' if os.environ.get('VERCEL')
+             else os.path.join(os.path.dirname(__file__), '..', 'data', 'cache'))
 
 # How long cached responses stay fresh (seconds)
 TTL_CATALOG = 24 * 3600   # terms, subjects, course search

@@ -2,7 +2,12 @@
 # Flask app: serves the planner page and a small JSON API it talks to
 
 import os
+import sys
 from concurrent.futures import ThreadPoolExecutor
+
+# Let the sibling modules import by name however the app is started (locally or on Vercel)
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
 
 from flask import Flask, jsonify, render_template, request
 
@@ -15,7 +20,8 @@ from scheduler import generate_schedules, unschedulable_courses
 from scoring import (DEFAULT_PREFS, credits_of, option_key, pick_backups,
                      rank_schedules, tight_walks)
 
-app = Flask(__name__, template_folder="../templates", static_folder="../static")
+app = Flask(__name__, template_folder=os.path.join(HERE, "..", "templates"),
+            static_folder=os.path.join(HERE, "..", "static"))
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(32)
 
 pool = ThreadPoolExecutor(max_workers=8)
