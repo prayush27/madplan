@@ -25,6 +25,8 @@ from scoring import (DEFAULT_PREFS, credits_of, option_key, pick_backups,
 app = Flask(__name__, template_folder=os.path.join(HERE, "..", "templates"),
             static_folder=os.path.join(HERE, "..", "static"))
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(32)
+# Refuse oversized uploads before reading them; a DARS PDF is well under this
+app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024
 
 
 @app.errorhandler(Exception)
