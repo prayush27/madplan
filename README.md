@@ -1,8 +1,14 @@
 # MadPlan
 
+[![Tests](https://github.com/prayush27/madplan/actions/workflows/tests.yml/badge.svg)](https://github.com/prayush27/madplan/actions/workflows/tests.yml)
+
 A class planner for UW–Madison students. Upload your DARS and MadPlan works out what you still need, picks classes that count toward it, and builds a weekly schedule around your preferences, so you don't have to search Course Search & Enroll one class at a time.
 
 Personal project. Not affiliated with or endorsed by the University of Wisconsin–Madison.
+
+![From the start page to a finished week](docs/demo.gif)
+
+<sub>Screenshots use a made-up degree audit, not a real student's.</sub>
 
 ## What it does
 
@@ -17,7 +23,30 @@ Personal project. Not affiliated with or endorsed by the University of Wisconsin
 
 It works for any term the UW API lists, and understands shorthand like `cs400` or `stat 340`.
 
+<table>
+  <tr>
+    <td><img src="docs/calendar.png" alt="A planned week with each class's section, time and building" width="600"></td>
+    <td><img src="docs/phone.png" alt="The same week on a phone" width="200"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>The week, with sections, rooms, instructors, seats and class numbers</sub></td>
+    <td align="center"><sub>On a phone</sub></td>
+  </tr>
+</table>
+
 ## How it works
+
+```mermaid
+flowchart LR
+    pdf[DARS PDF] --> parse[Read the audit<br/>dars.py]
+    parse --> reqs[Requirements left<br/>+ courses taken]
+    reqs --> pick[Pick classes<br/>suggest.py]
+    uw[(UW Course Search<br/>& Enroll API)] --> pick
+    mg[(Madgrades<br/>grade history)] --> pick
+    pick --> search[Every conflict-free<br/>section combination<br/>scheduler.py]
+    search --> score[Score against your<br/>preferences<br/>scoring.py]
+    score --> plans[Plan A + backups]
+```
 
 | Part | File |
 | --- | --- |
