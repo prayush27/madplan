@@ -776,8 +776,7 @@ function save() {
 }
 
 function load() {
-    // Plans saved before the rename to MadPlan live under the old key
-    try { return JSON.parse(localStorage.getItem(STORE_KEY) || localStorage.getItem("madplan")) || {}; }
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
     catch (e) { return {}; }
 }
 
@@ -1890,7 +1889,7 @@ document.querySelectorAll("[data-start]").forEach(btn => btn.addEventListener("c
 $("#open-start").addEventListener("click", () => showStart(true));
 
 function seenStart() {
-    try { return localStorage.getItem(SEEN_KEY) === "1" || !!localStorage.getItem(STORE_KEY) || !!localStorage.getItem("madplan"); }
+    try { return localStorage.getItem(SEEN_KEY) === "1" || !!localStorage.getItem(STORE_KEY); }
     catch (e) { return false; }
 }
 if (!location.hash.startsWith("#share=") && !seenStart()) showStart(true);
