@@ -107,3 +107,10 @@ def test_swap_lists_other_sections_that_fit(client, monkeypatch):
 
 def test_why_not_needs_a_query(client):
     assert client.post("/api/why_not", json={"term": "1274", "query": " "}).status_code == 400
+
+
+def test_page_markup_has_no_doubled_quotes(client):
+    # Regression: a stray quote (style=""--i:...) emptied every calendar block's position
+    import re
+    html = client.get("/").get_data(as_text=True)
+    assert not re.search(r'=""[^\s>/]', html)

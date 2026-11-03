@@ -1804,7 +1804,7 @@ function calendar(plan) {
             const kind = s.type === "lecture" ? "" : "secondary";
             const swappable = !(state.lastResult && state.lastResult.shared) && courseSummary(s.name);
             const tap = swappable ? `data-swap="${esc(s.name)}" role="button" tabindex="0" aria-label="Other sections of ${esc(s.name)}"` : "";
-            return `<div class="block ${kind}" ${tap} style=""--i:${i};--c:${colorFor(s.name)};top:${top(s.start)}px;height:${h}px"
+            return `<div class="block ${kind}" ${tap} style="--i:${i};--c:${colorFor(s.name)};top:${top(s.start)}px;height:${h}px"
                          title="${esc(s.name)} ${abbr(s.type)} ${esc(s.section)}, ${fmtTime(s.start)}–${fmtTime(s.end)}${s.building ? ", " + esc(s.building) : ""}">
                         <b>${esc(s.name)}</b><span class="blk-sec">${abbr(s.type)} ${esc(s.section)} · </span>${fmtTime(s.start)}${s.building ? `<span class="blk-where"><br><span class="faint">${esc(s.building)}</span></span>` : ""}
                     </div>`;
