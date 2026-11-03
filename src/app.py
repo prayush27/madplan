@@ -3,6 +3,7 @@
 
 import os
 import sys
+import urllib.error
 from concurrent.futures import ThreadPoolExecutor
 
 # Let the sibling modules import by name however the app is started (locally or on Vercel)
@@ -10,6 +11,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 from flask import Flask, jsonify, render_template, request
+from werkzeug.exceptions import HTTPException
 
 import dars
 import madgrades
@@ -23,6 +25,21 @@ from scoring import (DEFAULT_PREFS, credits_of, option_key, pick_backups,
 app = Flask(__name__, template_folder=os.path.join(HERE, "..", "templates"),
             static_folder=os.path.join(HERE, "..", "static"))
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(32)
+
+
+@app.errorhandler(Exception)
+def api_error(err):
+    """Answer API failures with JSON the page can show, and say when UW's course API is the problem."""
+    if isinstance(err, HTTPException):
+        return err
+    app.logger.exception("Request failed")
+    if isinstance(err, urllib.error.HTTPError):
+        message = f"UW's course API refused the request (HTTP {err.code}). Try again in a minute."
+    elif isinstance(err, urllib.error.URLError):
+        message = "Couldn't reach UW's course API. Try again in a minute."
+    else:
+        message = "Something went wrong on our side. Try again."
+    return jsonify(error=message), 500
 
 pool = ThreadPoolExecutor(max_workers=8)
 

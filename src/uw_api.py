@@ -4,6 +4,7 @@
 
 import hashlib
 import json
+import tempfile
 import os
 import re
 import time
@@ -13,9 +14,20 @@ from datetime import datetime, timezone
 from course import Course, CourseEntry
 
 BASE_URL  = "https://public.enroll.wisc.edu/api/search/v1"
-# Vercel only allows writing to /tmp, which is wiped now and then; locally the cache lives in data/
-CACHE_DIR = ('/tmp/madplan-cache' if os.environ.get('VERCEL')
-             else os.path.join(os.path.dirname(__file__), '..', 'data', 'cache'))
+def _writable_cache_dir():
+    """data/cache locally; on hosts like Vercel the code folder is read-only, so use the temp folder."""
+    local = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'cache')
+    if not os.environ.get('VERCEL'):
+        try:
+            os.makedirs(local, exist_ok=True)
+            if os.access(local, os.W_OK):
+                return local
+        except OSError:
+            pass
+    return os.path.join(tempfile.gettempdir(), 'madplan-cache')
+
+
+CACHE_DIR = _writable_cache_dir()
 
 # How long cached responses stay fresh (seconds)
 TTL_CATALOG = 24 * 3600   # terms, subjects, course search
@@ -42,7 +54,10 @@ def _cache_path(key):
 
 def _fetch(url, body=None, ttl=TTL_CATALOG):
     """GET (or POST if body is given) a JSON endpoint, using the disk cache."""
-    os.makedirs(CACHE_DIR, exist_ok=True)
+    try:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+    except OSError:
+        pass
     key  = url + (json.dumps(body, sort_keys=True) if body else "")
     path = _cache_path(key)
 
@@ -63,8 +78,11 @@ def _fetch(url, body=None, ttl=TTL_CATALOG):
                 return json.load(f)
         raise
 
-    with open(path, 'w') as f:
-        json.dump(result, f)
+    try:
+        with open(path, 'w') as f:
+            json.dump(result, f)
+    except OSError:
+        pass   # caching is a speed-up only; never fail a request over it
     return result
 
 

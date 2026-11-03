@@ -36,7 +36,10 @@ def enabled():
 
 
 def _get(url):
-    os.makedirs(CACHE_DIR, exist_ok=True)
+    try:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+    except OSError:
+        pass
     path = _cache_path("madgrades:" + url)
     if os.path.exists(path) and time.time() - os.path.getmtime(path) < TTL:
         with open(path) as f:
@@ -46,8 +49,11 @@ def _get(url):
                                                "User-Agent": "madplan/1.0"})
     with urllib.request.urlopen(req, timeout=20) as resp:
         result = json.load(resp)
-    with open(path, 'w') as f:
-        json.dump(result, f)
+    try:
+        with open(path, 'w') as f:
+            json.dump(result, f)
+    except OSError:
+        pass   # caching is a speed-up only
     return result
 
 
