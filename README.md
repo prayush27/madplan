@@ -50,6 +50,19 @@ MADGRADES_TOKEN=your-token
 
 Without a token everything still works, just without GPAs.
 
+## Tests
+
+```sh
+venv/bin/pip install -r requirements-dev.txt
+venv/bin/pytest
+```
+
+The tests run offline in under a second: UW and Madgrades calls are faked, and `tests/fixtures/` holds made-up DARS audits (an L&S B.S., an Engineering major and an L&S B.A.) laid out like real exports. To also check your own DARS without committing it:
+
+```sh
+MADPLAN_DARS=/path/to/your/dars.pdf venv/bin/pytest -k real
+```
+
 ## Limits
 
 - Prerequisite and requirement matching are best-effort. Always check your plan against your actual DARS before enrolling.

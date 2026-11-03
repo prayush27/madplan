@@ -1,0 +1,59 @@
+                    PREPARED: 11/01/26 - 10:15
+                    Computer Sciences major
+CL/YR: BS   2
+-----------------------------------------------------------------
+NO     University General Education: Breadth
+  -  1) Humanities/Literature/Arts
+         NEEDS:   3.00 CREDITS
+  +  2) Natural Science
+      FA25 PHYSICS 103  4.00 A     General Physics
+-----------------------------------------------------------------
+NO     University General Education: Communication
+  +  1) Communication A
+      FA25 ENGL    100  3.00 AB    Intro to College Composition
+  -  2) Communication B
+         NEEDS:                 1 COURSE
+-----------------------------------------------------------------
+OK     University General Education: Quantitative Reasoning
+      FA25 MATH    221  5.00 A     Calculus & Analytic Geom 1
+-----------------------------------------------------------------
+OK     Language for the B.S. degree
+      FA24 SPANISH 102  4.00 HS    Second Semester Spanish
+-----------------------------------------------------------------
+NO     Breadth in the Degree: Humanities
+    EARNED:  3.00 CREDITS
+--> NEEDS:   9.00 CREDITS
+
+  -  1) Literature
+         NEEDS:   6.00 CREDITS
+        SELECT FROM: COURSES W/ 'Literature' Breadth
+
+        Add'l Humanities - only 6 cr. may count toward 12 req.
+           3.00 CREDITS ADDED
+        SELECT FROM: COURSES W/ 'Humanities' Breadth
+-----------------------------------------------------------------
+NO     Breadth in the Degree: Social Sciences
+--> NEEDS:   8.00 CREDITS
+-----------------------------------------------------------------
+NO     Computer Sciences major
+    EARNED: 12.00 CREDITS
+IN-PROGRESS  6.00 CREDITS
+--> NEEDS:  27.00 CREDITS
+
+IP+  1) Basic Computer Science
+      FA25 COMP SCI300  3.00 A     Programming II
+      SP26 COMP SCI400  3.00 INP   Programming III
+  -  2) Linear Algebra
+         NEEDS:                 1 COURSE
+        SELECT FROM: MATH 320 OR 340 OR 341
+  -  3) Software & Hardware
+         NEEDS:                 2 COURSES
+        SELECT FROM: COMP SCI 407, 506, 536, 537,
+                     538, 564
+-----------------------------------------------------------------
+NO     Computer Sciences major - Residence & Quality of Work
+  -  1) 2.000 GPA in all Comp Sci courses
+-----------------------------------------------------------------
+NO     Total Credits for the Degree
+         NEEDS:  90.00 CREDITS
+-----------------------------------------------------------------

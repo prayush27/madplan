@@ -1,0 +1,27 @@
+                    PREPARED: 11/01/26 - 10:15
+                    Mechanical Engineering major
+CL/YR: BSME 3
+-----------------------------------------------------------------
+NO     Mechanical Engineering: Required Courses
+      FA24 M E     201  3.00 B     Dynamics
+  -  1) Mechanics
+         NEEDS:                 2 COURSES
+        SELECT FROM: M E 240, 340
+  -  2) Technical Electives
+         NEEDS:   9.00 CREDITS
+        SELECT FROM: SEE DEPARTMENT LIST OF APPROVED ELECTIVES
+-----------------------------------------------------------------
+NO     Liberal Studies Electives
+  -  1) Humanities / Social Science
+         NEEDS:   6.00 CREDITS
+        SELECT FROM: COURSES W/ 'Humanities' Breadth
+  -  2) Ethnic Studies
+         NEEDS:                 1 COURSE
+-----------------------------------------------------------------
+NO     Engineering Professional Development
+  -  1) Professional Skills
+         NEEDS:                 1 COURSE
+        SELECT FROM: INTEREGR 397 OR E P D 397
+-----------------------------------------------------------------
+NO     Co-op or Internship Experience
+-----------------------------------------------------------------
