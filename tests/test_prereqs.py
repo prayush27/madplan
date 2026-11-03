@@ -20,6 +20,8 @@ TAKEN = ["COMP SCI 300", "MATH 221", "MATH 222", "STAT 240"]
     ("COMP SCI 400 or (STAT 340 and MATH 221)", False),
     ("COMP SCI 400, 354, or 300", True),              # commas read as "or"
     ("MATH 999 and (COMP SCI 400, 300)", False),      # ...and bind inside the parentheses
+    ("(COMP SCI 300 or 320), (MATH 320 or 340)", False),  # but a comma between groups is "and"
+    ("(COMP SCI 300 or 320), (MATH 221 or 340)", True),
     ("E C E/COMP SCI 252", False),
     ("COMP SCI/E C E 300", True),                     # cross-listed: any listed subject counts
     ("Consent of instructor", False),

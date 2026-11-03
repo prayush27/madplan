@@ -281,7 +281,10 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, min_credi
         searches += [([], name, 5, None) for name in r.courses] if r.courses else [(r.filters, "", 150, None)]
     results = pool.map(lambda a: uw_api.search_courses(term, a[1], filters=a[0] + [UNDERGRAD],
                                                        page_size=a[2])[1], searches)
+    offered = {}   # everything the searches found, before screening; used to explain empty requirements
     for (_, _, _, word), hits in zip(searches, results):
+        for c in hits:
+            offered.setdefault(c['name'], c)
         collect(hits, word)
 
     # Shortlist on catalog data alone (requirements covered, interest match, level) so we only
@@ -312,7 +315,8 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, min_credi
 
     candidates = {i: sorted((n for n in fits if i in covers[n]), key=lambda n: -quality[n])
                   for i in range(len(reqs)) if not covered_by[i]}
-    unfilled   = [reqs[i].label for i, c in candidates.items() if not c]
+    unfilled   = [{"label": reqs[i].label, "reason": _why_unfilled(reqs[i], offered, catalog, options)}
+                  for i, c in candidates.items() if not c]
 
     # 5. Combine: enough courses for each open requirement (a course can cover several), all fitting together
     checks = [0]
@@ -506,6 +510,124 @@ def fill(term, must, specs, prefs, blocked=None, include_closed=False, min_credi
         "checked":      len(catalog),
         "fitting":      len(fits),
         "grades":       {n: grades[n] for n in fits},
+    }
+
+
+def _why_unfilled(req, offered, catalog, options):
+    """The first thing that ruled out every class for a requirement, in the order the planner screens."""
+    if not any(req.match(c) for c in offered.values()):
+        return ("none of its classes are offered this term" if req.courses
+                else "nothing that counts for it is offered this term")
+    eligible_names = [n for n, c in catalog.items() if req.match(c)]
+    if not eligible_names:
+        return "none of its classes are open to you yet (prereqs, class standing, or already taken)"
+    if not any(options.get(n) for n in eligible_names):
+        return "every section is full or during your busy times"
+    return "nothing open fits around your must-haves and busy times"
+
+
+def why_not(term, query, completed=None, standing=None, programs=(), specs=(), bonus_specs=(),
+            plan_sections=(), blocked=None, include_closed=False, skip_prereqs=True):
+    """
+    Explains whether one course could go in this term's plan, check by check, in plain words.
+    completed:     course names from DARS (None if no DARS, so prereqs can't be checked)
+    plan_sections: Course meetings in the current plan; the course has to fit around them
+    Returns {"course", "checks": [{"ok": True/False/None, "label", "detail"}], "verdict", "can_add"},
+    or {"error"} if the course can't be found. ok None is just information.
+    """
+    code, number = uw_api.resolve_query(term, query)
+    _, hits = uw_api.search_courses(term, query, page_size=10) if code else (0, [])
+    # Only an exact subject + number match counts; a nearby course isn't the one they asked about
+    course = next((h for h in hits if h['subject_code'] == code and
+                   (number is None or h['catalog_number'] == number)), None) if number else None
+    if course is None:
+        return {"error": f"{query.strip().upper()} isn't offered this term, or isn't a course name MadPlan recognizes."}
+
+    checks = []
+
+    def check(ok, label, detail=""):
+        checks.append({"ok": ok, "label": label, "detail": detail})
+
+    check(True, "Offered this term", f"{course['title']} · {course.get('credits') or course.get('min_credits')} cr")
+
+    done = {c.upper() for c in completed} if completed is not None else None
+    if done is not None:
+        if course['name'].upper() in done:
+            check(False, "Already on your record", "You've taken it or are taking it now.")
+        else:
+            check(True, "Not on your record yet")
+
+    number_value = int(re.sub(r"\D", "", course['catalog_number']) or 0)
+    if not is_real_class(course):
+        check(False, "Not a regular class", "Independent study, research, internships and the like aren't suggested.")
+    elif number_value < 100:
+        check(False, "Below 100-level", "These generally don't count toward a degree.")
+    elif not eligible(course, standing):
+        check(False, "Not open to your class standing", course.get('prerequisites') or "")
+
+    prereq = course.get('prerequisites') or ""
+    taken = done is not None and course['name'].upper() in done
+    if taken:
+        pass   # prereqs don't matter for a class already on the record
+    elif done is not None:
+        if dars.prereqs_met(prereq, done, standing, programs):
+            check(True, "Prereqs met", prereq)
+        else:
+            check(False, "Prereqs not met yet", prereq)
+    elif skip_prereqs and needs_prereqs(course):
+        check(False, "Has course prereqs", "Upload your DARS so MadPlan can check them, or turn off "
+                                           "“Only suggest classes with no course prereqs”. " + prereq)
+    elif prereq:
+        check(None, "Prereqs not checked", "Upload your DARS to check them. " + prereq)
+
+    reqs  = [r for r in (build_requirement(term, s) for s in specs) if r]
+    bonus = [r for r in (build_requirement(term, s) for s in bonus_specs) if r]
+    counts = [r.label for r in reqs if r.match(course)]
+    later  = [r.label for r in bonus if r.match(course)]
+    if counts:
+        check(True, "Counts toward " + " + ".join(counts))
+    elif later:
+        check(None, "Counts toward " + " + ".join(later), "You haven't ticked that requirement for this term.")
+    elif reqs or bonus:
+        check(False, "Doesn't count toward your requirements", "It would only be an elective.")
+
+    entry = _load(course, term)
+    others = [s for s in plan_sections if s.name != course['name']]
+    if entry is None or not entry.packages:
+        check(False, "No sections listed yet")
+    else:
+        open_options = usable_packages(entry, include_closed, blocked)
+        if not open_options:
+            # Sections that would work if full ones were allowed: then fullness is the problem
+            if usable_packages(entry, True, blocked):
+                check(False, "Every section is full", "Turn on “Show full sections” to plan around a waitlist.")
+            else:
+                check(False, "Every section is during your busy times")
+        else:
+            fitting = [o for o in open_options if not any(has_time_conflict(s, b) for s in o for b in others)]
+            if fitting:
+                check(True, f"{len(fitting)} open section{'s fit' if len(fitting) > 1 else ' fits'} your week")
+            else:
+                clashes = {}
+                for o in open_options:
+                    for name in {b.name for s in o for b in others if has_time_conflict(s, b)}:
+                        clashes[name] = clashes.get(name, 0) + 1
+                worst = sorted(clashes, key=lambda n: -clashes[n])[:2]
+                check(False, "Every open section clashes with your plan",
+                      "Mostly with " + " and ".join(worst) + "." if worst else "")
+
+    grades = madgrades.course_grades(course['subject'], course['catalog_number'])
+    stats = grades and (grades['recent'] or grades['overall'])
+    if stats:
+        check(None, f"{stats['gpa']:.2f} average GPA", f"{stats['pct_a']}% A's")
+
+    blocker = next((c for c in checks if c["ok"] is False), None)
+    return {
+        "course":  {**course, "grades": {"overall": grades['overall'], "recent": grades['recent']} if grades else None},
+        "checks":  checks,
+        "verdict": f"Not this term: {blocker['label'].lower()}." if blocker
+                   else "It works. Add it as a must-have and MadPlan will rebuild your plan around it.",
+        "can_add": blocker is None,
     }
 
 

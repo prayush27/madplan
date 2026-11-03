@@ -84,3 +84,26 @@ def test_uw_unreachable_is_explained(client, monkeypatch):
 
 def test_unknown_page_is_a_plain_404(client):
     assert client.get("/no-such-page").status_code == 404
+
+
+def test_swap_lists_other_sections_that_fit(client, monkeypatch):
+    from course import Course, CourseEntry
+    import madgrades
+
+    def lecture(section, day, start):
+        return Course("CS 1", section, [day], start, start + 50, 3)
+    packages = [{"id": str(i), "sections": [lecture(*s)], "status": "OPEN", "online": False}
+                for i, s in enumerate([("001", "Mon", 900), ("002", "Tue", 900), ("003", "Wed", 1000)])]
+    monkeypatch.setattr(uw_api, "load_course_entry", lambda c: CourseEntry("CS 1", 3, packages))
+    monkeypatch.setattr(madgrades, "course_grades", lambda s, n: None)
+
+    plan = [{"name": "CS 1", "section": "001", "type": "lecture", "days": ["Mon"], "start": 900, "end": 950},
+            {"name": "ART 1", "section": "001", "type": "lecture", "days": ["Wed"], "start": 1000, "end": 1050}]
+    body = client.post("/api/swap", json={"term": "1274", "course": {"name": "CS 1"}, "sections": plan}).get_json()
+    # 001 is the current section and 003 clashes with ART 1, so only 002 is offered
+    assert [o["sections"][0]["section"] for o in body["options"]] == ["002"]
+    assert body["clashing"] == 1
+
+
+def test_why_not_needs_a_query(client):
+    assert client.post("/api/why_not", json={"term": "1274", "query": " "}).status_code == 400

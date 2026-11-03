@@ -271,6 +271,39 @@
         .pick .reasons { grid-column: 2 / -1; font-size: 12px; color: var(--ink-2); }
         .pick .reasons .twice { color: var(--red); }
         .alts { margin-top: 48px; }
+
+        /* Tap a class on the calendar to swap its section */
+        .block[data-swap] { cursor: pointer; }
+        .block[data-swap]:hover { filter: brightness(0.96); }
+        .block[data-swap]:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; z-index: 2; }
+        .block.picked { outline: 2px solid var(--c); outline-offset: 1px; z-index: 2; }
+        .cal-hint { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+        .swap-panel { margin-top: 16px; padding: 16px 18px; background: var(--paper-2); border-top: 3px solid var(--c, var(--red)); }
+        .swap-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+        .swap-head h3 { font-family: 'Red Hat Display', system-ui, sans-serif; font-weight: 800; font-size: 17px; }
+        .swap-opt { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; align-items: baseline;
+                    padding: 12px 0; border-bottom: 1px solid var(--hair); font-size: 13px; }
+        .swap-opt:last-child { border-bottom: 0; }
+        .swap-opt .when b { font-weight: 600; }
+        .swap-opt .meta { grid-column: 1 / -1; font-size: 12px; color: var(--ink-2); }
+        .delta-up { color: var(--green); font-weight: 600; }
+        .delta-down { color: var(--red); font-weight: 600; }
+        .swapped-note { padding: 10px 0; font-size: 13px; color: var(--green); }
+
+        /* Why not this class? */
+        .whynot { margin-top: 40px; }
+        .whynot h3 { font-family: 'Red Hat Display', system-ui, sans-serif; font-weight: 800; font-size: 19px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+        .whynot form { display: flex; gap: 16px; align-items: flex-end; max-width: 460px; margin-top: 10px; }
+        .whynot form input { flex: 1; }
+        .checks { list-style: none; padding: 0; margin: 14px 0 0; }
+        .checks li { display: grid; grid-template-columns: 20px 1fr; gap: 0 8px; padding: 7px 0; font-size: 13px; border-bottom: 1px solid var(--hair); }
+        .checks .mark { font-weight: 700; }
+        .checks .yes .mark { color: var(--green); }
+        .checks .no .mark { color: var(--red); }
+        .checks .info .mark { color: var(--ink-3); }
+        .checks .detail { grid-column: 2; font-size: 12px; color: var(--ink-3); }
+        .verdict { margin-top: 12px; font-size: 14px; font-weight: 600; }
+        .verdict.no { color: var(--red); }
         .alt-group { margin-top: 20px; }
         .alt-group h4 { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; padding-bottom: 6px; border-bottom: 1px solid var(--hair); }
         .alt { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 16px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--hair); font-size: 13px; }
@@ -1443,8 +1476,11 @@ function renderOutput() {
     if (best && res.min_credits && best.credits < res.min_credits) {
         alerts += `<div class="note-line bad">Only found <b>${best.credits} credits</b> that fit your week, under your ${res.min_credits}-credit minimum. Try allowing full sections, freeing up a busy time, or ticking another requirement.</div>`;
     }
-    for (const label of res.unfilled || []) {
-        alerts += `<div class="note-line bad">Nothing open for <b>${esc(label)}</b> fits around your must-haves and busy times.</div>`;
+    for (const u of res.unfilled || []) {
+        // Older saved results are plain labels
+        const label = typeof u === "string" ? u : u.label;
+        const reason = typeof u === "string" ? "nothing open fits around your must-haves and busy times" : u.reason;
+        alerts += `<div class="note-line bad">Nothing for <b>${esc(label)}</b> this term: ${esc(reason)}.</div>`;
     }
 
     if (!state.plans.length) {
@@ -1486,6 +1522,8 @@ function renderOutput() {
         ${walks}
         ${plan.picks ? whyBlock(plan) : ""}
         ${calendar(plan)}
+        ${res.shared ? "" : `<p class="cal-hint">Tap a class to see its other sections that fit.</p>`}
+        <div class="swap-panel" id="swap-panel" hidden></div>
         ${sectionTable(plan)}
         <div class="exports">
             <button class="link" id="copy-numbers">Copy class numbers</button>
@@ -1493,7 +1531,24 @@ function renderOutput() {
             ${res.shared ? "" : `<button class="link" id="to-roadmap">Add to roadmap</button>
             <button class="link" id="share">Copy share link</button>`}
         </div>
+        ${res.shared ? "" : whyNotBlock()}
         ${alternativesBlock(res)}`;
+
+    out.querySelectorAll("[data-swap]").forEach(el => {
+        el.addEventListener("click", () => openSwap(el.dataset.swap));
+        el.addEventListener("keydown", ev => {
+            if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); openSwap(el.dataset.swap); }
+        });
+    });
+    if (state.swapNote) {
+        const panel = $("#swap-panel");
+        panel.hidden = false;
+        panel.style.removeProperty("--c");
+        panel.innerHTML = `<div class="swapped-note">${state.swapNote}</div>`;
+        state.swapNote = null;
+    }
+    const whyForm = $("#whynot-form");
+    if (whyForm) whyForm.addEventListener("submit", ev => { ev.preventDefault(); checkWhyNot(); });
 
     out.querySelectorAll("[data-plan]").forEach(btn => btn.addEventListener("click", () => {
         state.activePlan = +btn.dataset.plan;
@@ -1575,6 +1630,150 @@ function bindAlternatives(out) {
     }));
 }
 
+// The course summary (subject, ids, credits) behind a class on the calendar: a pick or a must-have
+function courseSummary(name) {
+    const plan = state.plans[state.activePlan] || {};
+    return (plan.picks || []).find(c => c.name === name) || state.mine.find(c => c.name === name) || null;
+}
+
+function sectionLine(s) {
+    const where = s.building ? ` · ${esc(s.building)}` : "";
+    return `<b>${abbr(s.type)} ${esc(s.section)}</b> ${s.days.join(" ")} ${fmtTime(s.start)}–${fmtTime(s.end)}${where}`;
+}
+
+function seatText(sections) {
+    const statuses = sections.map(s => s.status).filter(Boolean);
+    if (statuses.includes("CLOSED")) return `<span class="closed">full</span>`;
+    if (statuses.includes("WAITLISTED")) return `<span class="waitlisted">waitlist</span>`;
+    const open = Math.min(...sections.map(s => s.open_seats ?? Infinity));
+    return open === Infinity ? "" : `<span class="open">${open} open</span>`;
+}
+
+async function openSwap(name) {
+    const plan = state.plans[state.activePlan];
+    const course = courseSummary(name);
+    const panel = $("#swap-panel");
+    if (!plan || !course || !panel) return;
+    document.querySelectorAll(".block.picked").forEach(b => b.classList.remove("picked"));
+    document.querySelectorAll(`.block[data-swap="${CSS.escape(name)}"]`).forEach(b => b.classList.add("picked"));
+    panel.hidden = false;
+    panel.style.setProperty("--c", colorFor(name));
+    panel.innerHTML = `<p class="status spin">Checking the other sections of ${esc(name)}</p>`;
+    panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    const prefs = readPrefs();
+    let res;
+    try {
+        res = await fetch("/api/swap", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ term: state.term, course, sections: plan.sections, blocked: state.busy,
+                                   include_closed: prefs.include_closed, prefs }),
+        }).then(r => r.json());
+    } catch (e) {
+        res = { error: "Couldn't reach the server." };
+    }
+    const close = `<button class="link small" id="swap-close">Close</button>`;
+    if (res.error) {
+        panel.innerHTML = `<div class="swap-head"><h3>${esc(name)}</h3>${close}</div><p class="status">${esc(res.error)}</p>`;
+    } else if (!res.options.length) {
+        const why = [res.clashing && `${res.clashing} clash with your other classes`,
+                     res.unavailable && `${res.unavailable} ${res.unavailable > 1 ? "are" : "is"} full or during your busy times`]
+                    .filter(Boolean).join(", and ");
+        panel.innerHTML = `<div class="swap-head"><h3>${esc(name)}</h3>${close}</div>
+            <p class="status">This is the only section that fits your week${why ? `. Of the others, ${why}` : ""}.</p>`;
+    } else {
+        const rows = res.options.map((o, i) => {
+            const delta = o.score - res.current_score;
+            const deltaText = delta > 0 ? `<span class="delta-up">+${delta}</span>` : delta < 0 ? `<span class="delta-down">${delta}</span>` : "same";
+            const people = [...new Set(o.sections.flatMap(s => s.instructors.map(p =>
+                p.grades ? `${p.name} ${p.grades.gpa.toFixed(2)}` : p.name)))].join(", ");
+            return `
+                <div class="swap-opt">
+                    <div class="when">${o.sections.map(sectionLine).join("<br>")}</div>
+                    <button class="link small" data-option="${i}">Swap</button>
+                    <div class="meta">${[seatText(o.sections), people && esc(people), `week score ${o.score} (${deltaText})`,
+                                         ...o.notes.filter(n => /before|after|class on|walk|waitlist/.test(n)).map(esc)]
+                                        .filter(Boolean).join(" · ")}</div>
+                </div>`;
+        }).join("");
+        const hidden = res.clashing ? `<p class="small faint">${res.clashing} more clash with your other classes.</p>` : "";
+        panel.innerHTML = `<div class="swap-head"><h3>Other sections of ${esc(name)}</h3>${close}</div>
+            <p class="small faint">Your week scores ${res.current_score} now. Everything else stays put.</p>${rows}${hidden}`;
+        panel.querySelectorAll("[data-option]").forEach(btn => btn.addEventListener("click", () => {
+            const o = res.options[+btn.dataset.option];
+            const delta = o.score - res.current_score;
+            plan.sections = [...plan.sections.filter(s => s.name !== name), ...o.sections];
+            plan.notes = o.notes;
+            plan.tight_walks = o.tight_walks;
+            // Fill plans mix week fit and class quality 50/50; the classes didn't change, only the week did
+            plan.score = Math.max(0, Math.min(100, Math.round(plan.score + delta * (plan.picks ? 0.5 : 1))));
+            state.swapNote = `Swapped ${esc(name)} to ${o.sections.map(s => `${abbr(s.type)} ${esc(s.section)}`).join(" + ")}.`;
+            renderOutput();
+        }));
+    }
+    $("#swap-close").addEventListener("click", () => {
+        panel.hidden = true;
+        document.querySelectorAll(".block.picked").forEach(b => b.classList.remove("picked"));
+    });
+}
+
+function whyNotBlock() {
+    return `
+        <div class="whynot">
+            <h3>Why not…?</h3>
+            <p class="status">Wondering about a class that isn't in your plan? Check it against everything above.</p>
+            <form id="whynot-form">
+                <input type="text" id="whynot-q" placeholder="cs 540, psych 202…" aria-label="Course to check" autocomplete="off">
+                <button class="link" type="submit">Check</button>
+            </form>
+            <div id="whynot-out"></div>
+        </div>`;
+}
+
+async function checkWhyNot() {
+    const query = $("#whynot-q").value.trim();
+    const box = $("#whynot-out");
+    if (!query) return;
+    const plan = state.plans[state.activePlan] || { sections: [] };
+    const prefs = readPrefs(), needs = readNeeds();
+    box.innerHTML = `<p class="status spin">Checking ${esc(query)}</p>`;
+    let res;
+    try {
+        res = await fetch("/api/why_not", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                term: state.term, query,
+                completed: state.dars ? state.dars.taken : undefined,
+                standing: needs.standing,
+                programs: state.dars && state.dars.program ? [state.dars.program] : [],
+                requirements: [...state.reqs, ...darsSpecs()],
+                bonus_requirements: state.dars ? state.dars.requirements.filter(r => !r.on) : [],
+                sections: plan.sections, blocked: state.busy,
+                include_closed: prefs.include_closed, skip_prereqs: prefs.skip_prereqs,
+            }),
+        }).then(r => r.json());
+    } catch (e) {
+        res = { error: "Couldn't reach the server." };
+    }
+    if (res.error) {
+        box.innerHTML = `<p class="verdict no">${esc(res.error)}</p>`;
+        return;
+    }
+    const mark = { true: ["yes", "✓"], false: ["no", "✗"], null: ["info", "·"] };
+    const items = res.checks.map(c => {
+        const [cls, sym] = mark[c.ok];
+        return `<li class="${cls}"><span class="mark" aria-hidden="true">${sym}</span><span>${esc(c.label)}</span>
+                ${c.detail ? `<span class="detail">${esc(c.detail)}</span>` : ""}</li>`;
+    }).join("");
+    box.innerHTML = `
+        <p style="margin-top:14px"><span class="code">${esc(res.course.name)}</span> <span class="muted">${esc(res.course.title)}</span></p>
+        <ul class="checks">${items}</ul>
+        <p class="verdict ${res.can_add ? "" : "no"}">${esc(res.verdict)}</p>
+        ${res.can_add ? `<button class="link" id="whynot-add">Add ${esc(res.course.name)} as a must-have</button>` : ""}`;
+    const add = $("#whynot-add");
+    if (add) add.addEventListener("click", () => { addCourse(res.course); makeSchedules(); });
+}
+
 function calendar(plan) {
     const busyBlocks = state.busy.filter(b => b.days.length).map(b => ({
         name: "Busy", type: "busy", days: b.days, start: b.start, end: b.end, section: "",
@@ -1603,7 +1802,9 @@ function calendar(plan) {
                 return `<div class="block busy" style="--i:${i};top:${top(s.start)}px;height:${h}px"><b>Busy</b>${fmtTime(s.start)}–${fmtTime(s.end)}</div>`;
             }
             const kind = s.type === "lecture" ? "" : "secondary";
-            return `<div class="block ${kind}" style="--i:${i};--c:${colorFor(s.name)};top:${top(s.start)}px;height:${h}px"
+            const swappable = !(state.lastResult && state.lastResult.shared) && courseSummary(s.name);
+            const tap = swappable ? `data-swap="${esc(s.name)}" role="button" tabindex="0" aria-label="Other sections of ${esc(s.name)}"` : "";
+            return `<div class="block ${kind}" ${tap} style=""--i:${i};--c:${colorFor(s.name)};top:${top(s.start)}px;height:${h}px"
                          title="${esc(s.name)} ${abbr(s.type)} ${esc(s.section)}, ${fmtTime(s.start)}–${fmtTime(s.end)}${s.building ? ", " + esc(s.building) : ""}">
                         <b>${esc(s.name)}</b><span class="blk-sec">${abbr(s.type)} ${esc(s.section)} · </span>${fmtTime(s.start)}${s.building ? `<span class="blk-where"><br><span class="faint">${esc(s.building)}</span></span>` : ""}
                     </div>`;

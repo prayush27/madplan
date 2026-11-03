@@ -18,9 +18,10 @@ import madgrades
 import suggest
 import uw_api
 from course import Course
-from scheduler import generate_schedules, unschedulable_courses
+from constraints import has_time_conflict
+from scheduler import generate_schedules, unschedulable_courses, usable_packages
 from scoring import (DEFAULT_PREFS, credits_of, option_key, pick_backups,
-                     rank_schedules, tight_walks)
+                     rank_schedules, score_schedule, tight_walks)
 
 app = Flask(__name__, template_folder=os.path.join(HERE, "..", "templates"),
             static_folder=os.path.join(HERE, "..", "static"))
@@ -63,6 +64,8 @@ def serialize_section(c, grades):
         "credits":      c.credits,
         "building":     c.building,
         "room":         c.room,
+        "lat":          c.lat,
+        "lon":          c.lon,
         "instructors":  [{"name": n, "grades": madgrades.instructor_grades(grades, n)}
                          for n in c.instructors],
         "class_number": c.class_number,
@@ -71,6 +74,19 @@ def serialize_section(c, grades):
         "waitlist":     c.waitlist,
         "status":       c.status,
     }
+
+
+def sections_from(items):
+    """Sections sent back by the page (as serialize_section made them) → Course objects."""
+    return [Course(s['name'], s.get('section', ""), s['days'], int(s['start']), int(s['end']),
+                   s.get('credits') or 0, section_type=s.get('type') or "lecture",
+                   building=s.get('building'), lat=s.get('lat'), lon=s.get('lon'),
+                   status=s.get('status')) for s in items or []]
+
+
+def walks_of(schedule):
+    return [{"day": d, "from": a.name, "to": b.name, "gap": gap, "walk": walk}
+            for d, a, b, gap, walk in tight_walks(schedule)]
 
 
 def parse_blocked(blocks):
@@ -161,6 +177,73 @@ def schedules():
                        if n not in online],
         online=online,
     )
+
+
+@app.route("/api/swap", methods=["POST"])
+def swap():
+    """
+    Other sections of one course in the current plan that still fit around everything else,
+    each scored as the whole week would be with it swapped in.
+    body: {term, course: summary, sections: the plan's sections, blocked, include_closed, prefs}
+    """
+    body    = request.get_json()
+    term    = body.get("term") or uw_api.default_term()
+    course  = body.get("course") or {}
+    prefs   = {**DEFAULT_PREFS, **(body.get("prefs") or {})}
+    include_closed = bool(body.get("include_closed"))
+    blocked = parse_blocked(body.get("blocked"))
+    if not course.get("name"):
+        return jsonify(error="Pick a class to swap."), 400
+
+    plan    = sections_from(body.get("sections"))
+    others  = [s for s in plan if s.name != course["name"]]
+    current = sorted((s.section_type, s.section) for s in plan if s.name == course["name"])
+    entry   = uw_api.load_course_entry({**course, "term": term})
+    grades  = madgrades.course_grades(course.get("subject", ""), course.get("catalog_number", ""))
+
+    usable  = usable_packages(entry, include_closed, blocked)
+    options, clashing = [], 0
+    for sections in usable:
+        if sorted((s.section_type, s.section) for s in sections) == current:
+            continue
+        if any(has_time_conflict(s, o) for s in sections for o in others):
+            clashing += 1
+            continue
+        week = others + sections
+        score, notes = score_schedule(week, prefs)
+        options.append({"score": score, "notes": notes, "tight_walks": walks_of(week),
+                        "sections": [serialize_section(s, grades) for s in sections]})
+    options.sort(key=lambda o: -o["score"])
+    return jsonify(
+        current_score=score_schedule(plan, prefs)[0] if plan else None,
+        options=options[:12],
+        clashing=clashing,
+        unavailable=len(entry.packages) - len(usable),
+    )
+
+
+@app.route("/api/why_not", methods=["POST"])
+def why_not():
+    """Explains, check by check, whether one course could go in this term's plan."""
+    body  = request.get_json()
+    query = (body.get("query") or "").strip()
+    if not query:
+        return jsonify(error="Type a course, like cs 540."), 400
+    result = suggest.why_not(
+        body.get("term") or uw_api.default_term(), query,
+        completed=body.get("completed"),
+        standing=int(body.get("standing") or 0) or None,
+        programs=body.get("programs") or [],
+        specs=body.get("requirements") or [],
+        bonus_specs=body.get("bonus_requirements") or [],
+        plan_sections=sections_from(body.get("sections")),
+        blocked=parse_blocked(body.get("blocked")),
+        include_closed=bool(body.get("include_closed")),
+        skip_prereqs=body.get("skip_prereqs", True),
+    )
+    if "error" in result:
+        return jsonify(error=result["error"]), 404
+    return jsonify(result)
 
 
 @app.route("/api/dars", methods=["POST"])

@@ -18,6 +18,8 @@ Personal project. Not affiliated with or endorsed by the University of Wisconsin
 - **Builds the week.** A backtracking search tries every section combination and scores each schedule on your earliest and latest class, days off, gaps, and walking time between buildings. You get the best plan plus backups.
 - **Shows live seats.** Open seats, waitlists and closed sections come straight from Course Search & Enroll.
 - **Explains its picks.** Every suggested class shows what it counts for, its average GPA and share of A's, and the other options you could swap in.
+- **Swap a section in one tap.** Tap any class on the calendar to see its other sections that still fit around everything else, each with seats, instructor and how the week's score changes.
+- **Answers "why not this class?"** Type any course and get a plain checklist: offered this term, already taken, prereqs, whether it counts toward what you ticked, and whether an open section fits your week. When a requirement comes back empty, the planner says which of those ruled it out.
 - **Plans ahead.** A roadmap keeps classes for future terms and shows how your requirements fill up over time.
 - **Gets you enrolled.** Copy the class numbers for enrollment, export the schedule to your calendar (.ics), or share a read-only link.
 

@@ -215,6 +215,8 @@ def prereqs_met(prereq_text, completed, standing=None, programs=()):
     text = (prereq_text or "").upper().strip()
     # Only the first sentence is the requirement; later ones are notes like "Not open to ..."
     text = re.split(r"\.\s", text)[0]
+    # "(A or B), (C or D)": a comma between two parenthesised groups means "and"
+    text = re.sub(r"\)\s*,\s*\(", ") AND (", text)
     if not re.search(r"\d{3}|STANDING|CONSENT|DECLARED", text):
         return True
     completed = {c.upper() for c in completed}

@@ -184,3 +184,63 @@ def test_must_haves_over_the_cap_is_an_error(catalog):
 def test_more_must_haves_than_the_class_limit_is_an_error(catalog):
     must = [catalog["COMP SCI 407"], catalog["COMP SCI 506"]]
     assert "more than your limit" in fill([humanities()], must=must, max_classes=1)["error"]
+
+
+# ── Why a requirement came back empty ────────────────────────
+
+def test_empty_requirement_says_the_class_is_not_offered(catalog):
+    result = fill([{"kind": "list", "courses": ["NOPE 101"], "group": MAJOR, "label": "Nope"}], max_credits=6)
+    assert result["unfilled"] == [{"label": "Nope", "reason": "none of its classes are offered this term"}]
+
+
+def test_empty_requirement_says_prereqs_are_the_problem(catalog):
+    # COMP SCI 520 needs COMP SCI 400, which isn't on this record
+    req = {"kind": "list", "courses": ["COMP SCI 520"], "group": MAJOR, "label": "Theory"}
+    result = fill([req], max_credits=6, completed=["COMP SCI 300"], standing=3)
+    assert result["unfilled"][0]["reason"].startswith("none of its classes are open to you yet")
+
+
+# ── Why not this class? ──────────────────────────────────────
+
+@pytest.fixture
+def why_not(catalog, monkeypatch):
+    monkeypatch.setattr(uw_api, "resolve_query",
+                        lambda term, q: (q.upper().rsplit(" ", 1)[0], q.rsplit(" ", 1)[1]) if " " in q else (None, None))
+
+    def check(query, **kwargs):
+        return suggest.why_not("1274", query, **kwargs)
+    return check
+
+
+def marks(result):
+    return {c["label"]: c["ok"] for c in result["checks"]}
+
+
+def test_why_not_a_class_that_works(why_not):
+    result = why_not("COMP SCI 407", completed=["COMP SCI 300"], specs=[software()])
+    assert result["can_add"]
+    assert marks(result)["Counts toward Software"] is True
+    assert marks(result)["1 open section fits your week"] is True
+
+
+def test_why_not_a_class_already_taken(why_not):
+    result = why_not("COMP SCI 407", completed=["COMP SCI 407"])
+    assert not result["can_add"] and result["verdict"] == "Not this term: already on your record."
+    assert not any(label.startswith("Prereqs") for label in marks(result))
+
+
+def test_why_not_unmet_prereqs(why_not):
+    result = why_not("COMP SCI 520", completed=["COMP SCI 300"])
+    assert marks(result)["Prereqs not met yet"] is False
+
+
+def test_why_not_a_clash_names_the_class_in_the_way(why_not):
+    # COMP SCI 407 is slot 0: Mon/Wed/Fri at 8:00
+    in_the_way = Course("MATH 221", "001", ["Mon"], 800, 915, 5)
+    result = why_not("COMP SCI 407", plan_sections=[in_the_way])
+    clash = next(c for c in result["checks"] if c["label"] == "Every open section clashes with your plan")
+    assert clash["ok"] is False and "MATH 221" in clash["detail"]
+
+
+def test_why_not_an_unknown_course(why_not):
+    assert "isn't offered this term" in why_not("NOPE 101")["error"]
