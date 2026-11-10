@@ -99,3 +99,7 @@ MADPLAN_DARS=/path/to/your/dars.pdf venv/bin/pytest -k real
 - Prerequisite and requirement matching are best-effort. Always check your plan against your actual DARS before enrolling.
 - DARS parsing has only been tested on an L&S B.S. audit so far.
 - Saved plans live in your browser's local storage.
+
+## License
+
+MIT. Course data comes from UW–Madison and grade data from [Madgrades](https://madgrades.com); both belong to their owners.
