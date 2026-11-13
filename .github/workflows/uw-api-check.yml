@@ -1,0 +1,34 @@
+name: UW API check
+
+# Sends two small requests to UW's course API from a cloud server and prints the replies,
+# to see whether a cloud host gets through (200) or is refused (403). Runs only by hand.
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Where this runner is
+        run: curl -s https://ipinfo.io/json | grep -E '"(ip|org|city|region)"' || true
+
+      - name: 1. List of terms (GET)
+        run: |
+          curl -sS -o body.txt -D headers.txt -w 'HTTP %{http_code}\n' \
+            -H 'User-Agent: madplan/1.0' \
+            https://public.enroll.wisc.edu/api/search/v1/aggregate
+          grep -iE '^(x-cache|server|x-amz-cf-pop|content-type):' headers.txt || true
+          head -c 300 body.txt; echo
+          cp body.txt terms.json
+
+      - name: 2. One small search (POST, 1 result)
+        run: |
+          sleep 5
+          TERM_CODE=$(python3 -c 'import json; print(json.load(open("terms.json"))["terms"][-1]["termCode"])' 2>/dev/null || echo 1274)
+          echo "term $TERM_CODE"
+          curl -sS -o body.txt -D headers.txt -w 'HTTP %{http_code}\n' \
+            -H 'User-Agent: madplan/1.0' -H 'Content-Type: application/json' \
+            -d "{\"selectedTerm\":\"$TERM_CODE\",\"queryString\":\"*\",\"filters\":[],\"page\":1,\"pageSize\":1,\"sortOrder\":\"SUBJECT\"}" \
+            https://public.enroll.wisc.edu/api/search/v1
+          grep -iE '^(x-cache|server|x-amz-cf-pop|content-type):' headers.txt || true
+          head -c 300 body.txt; echo
